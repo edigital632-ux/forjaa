@@ -536,7 +536,6 @@ footer{
 
 <div class="grain-bg"></div>
 
-<!-- ===================== LANDING VIEW ===================== -->
 <div id="landingView" class="app-view active">
 
   <nav class="nav" id="mainNav">
@@ -668,7 +667,6 @@ footer{
   </footer>
 </div>
 
-<!-- ===================== AUTH VIEW ===================== -->
 <div id="authView" class="app-view">
   <div class="auth-screen">
     <a class="auth-back" href="javascript:void(0)" onclick="backToLanding()">← Voltar</a>
@@ -697,7 +695,6 @@ footer{
   </div>
 </div>
 
-<!-- ===================== DASHBOARD VIEW ===================== -->
 <div id="dashboardView" class="app-view">
   <nav class="dash-nav">
     <div class="logo"><span class="logo-mark">{ }</span>Forja</div>
@@ -726,7 +723,6 @@ footer{
   </div>
 </div>
 
-<!-- ===================== BUILDER VIEW ===================== -->
 <div id="builderView" class="builder-view">
   <div class="builder-topbar">
     <div class="builder-topbar-left">
@@ -906,7 +902,6 @@ function showAuth(mode){
 }
 </script>
 
-<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -1087,7 +1082,7 @@ function createProject(initialName, initialPrompt){
     openProject(ref.id, {name:name, code:''});
     if(initialPrompt) sendChatMessage(initialPrompt);
   }).catch(err=>{
-    console.error('Erro ao criar projeto:', err);
+    console.error('Erro ao create projeto:', err);
     alert('Não foi possível criar o projeto.\n\nMotivo: ' + err.message + '\n\nSe o erro mencionar "permissão" ou "permission-denied", revise as regras do Firestore no Console do Firebase.');
   });
 }
@@ -1280,7 +1275,24 @@ async function sendChatMessage(forcedText){
   renderThinking();
 
   try{
-    const systemPrompt = `Você é um gerador de código especializado em criar aplicações web completas em um ÚNICO arquivo HTML (com CSS e JS embutidos), sem dependências de build. Sempre responda APENAS com o código HTML completo, começando com <!DOCTYPE html> e nada mais — sem explicações antes ou depois, sem markdown, sem crases. Se o usuário já tinha um código anterior (fornecido abaixo) e está pedindo uma alteração, edite esse código existente em vez de recomeçar do zero. Se o usuário anexou uma imagem (captura de tela, referência visual, rascunho), use-a como referência visual ou funcional para o que precisa ser construído.
+    // Stringified config passível de injeção direta no iframe gerado para sincronizar banco automaticamente
+    const currentConfigString = JSON.stringify(firebaseConfig);
+
+    const systemPrompt = `Você é um gerador de código avançado no-code profissional focado em criar microssistemas e aplicações web robustas (estilo Lovable e v0) em um ÚNICO arquivo HTML estruturado (com CSS moderno e Javascript dinâmico inclusos). 
+
+DIRETRIZ CRÍTICA DE FUNCIONALIDADE E PERSISTÊNCIA:
+1. Os aplicativos que você cria NÃO podem ser apenas telas de visualização estática ou usar LocalStorage volátil. Eles precisam ser 100% operacionais e funcionais.
+2. Você DEVE obrigatoriamente realizar a integração com banco de dados em tempo real usando o Firebase Firestore para armazenar qualquer informação dinâmica manipulada no app (ex: transações, tarefas, usuários, registros, etc).
+3. Para fazer isso, importe sempre os scripts necessários do Firebase versão compat:
+   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"><\/script>
+   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"><\/script>
+4. Inicialize o banco de dados utilizando EXATAMENTE estas credenciais dinâmicas do projeto do usuário:
+   const firebaseConfig = ${currentConfigString};
+   if(!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+   const db = firebase.firestore();
+5. Toda vez que o usuário interagir salvando, alterando, deletando ou listando itens, use o objeto 'db.collection()' para persistir os dados em coleções apropriadas no Firestore, garantindo o funcionamento do CRUD.
+
+Sempre responda APENAS com o código HTML completo, começando com <!DOCTYPE html> e nada mais — sem explicações antes ou depois, sem markdown, sem crases. Se o usuário já tinha um código anterior (fornecido abaixo), edite e melhore esse código existente ao invés de recomeçar do zero.
 
 ${currentProjectCode ? 'CÓDIGO ATUAL DO PROJETO:\n' + currentProjectCode : 'Não há código ainda — este é o primeiro pedido.'}`;
 
@@ -1316,7 +1328,7 @@ ${currentProjectCode ? 'CÓDIGO ATUAL DO PROJETO:\n' + currentProjectCode : 'Nã
     const cleanCode = rawText.replace(/^```html\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
 
     removeThinking();
-    renderMessage('ai', 'Pronto! Atualizei o preview ao lado com as mudanças.');
+    renderMessage('ai', 'Pronto! Atualizei o preview ao lado com as mudanças e integrei o banco de dados Firebase.');
     chatHistory.push({role:'ai', content:'Código gerado/atualizado.'});
 
     currentProjectCode = cleanCode;
