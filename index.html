@@ -845,7 +845,7 @@ const templates = [
   {name:'Portfólio Criativo', cat:'Site · Portfólio', prompt:'Crie uma página de portfólio criativo, com seção de apresentação, uma grade de projetos com imagem e título, e uma seção de contato.'},
   {name:'Rastreador de Hábitos', cat:'App · SaaS', prompt:'Crie um app de rastreador de hábitos diários, onde o usuário pode adicionar hábitos, marcar como concluído no dia, e ver uma contagem de sequência (streak) para cada um.'},
   {name:'Blog Pessoal', cat:'Site · Blog', prompt:'Crie um blog pessoal simples, com uma lista de posts (título, data e resumo) e uma página de leitura para cada post.'},
-  {name:'Damas Online', cat:'App · Jogo', prompt:'Crie um jogo de damas funcional para dois jogadores no mesmo dispositivo, com tabuleiro 8x8, peças clicáveis e regras básicas de movimento e captura.'},
+  {name:'Damas Online', cat:'App · Jogo', prompt:'Crie um jogo de damas functional para dois jogadores no mesmo dispositivo, com tabuleiro 8x8, peças clicáveis e regras básicas de movimento e captura.'},
   {name:'Chat em Tempo Real', cat:'App · Mensagens', prompt:'Crie a interface de um app de chat estilo mensageiro, com lista de conversas à esquerda e uma janela de mensagens à direita, com campo para digitar e enviar.'}
 ];
 const grid = document.getElementById('templatesGrid');
@@ -1082,7 +1082,7 @@ function createProject(initialName, initialPrompt){
     openProject(ref.id, {name:name, code:''});
     if(initialPrompt) sendChatMessage(initialPrompt);
   }).catch(err=>{
-    console.error('Erro ao create projeto:', err);
+    console.error('Erro ao criar projeto:', err);
     alert('Não foi possível criar o projeto.\n\nMotivo: ' + err.message + '\n\nSe o erro mencionar "permissão" ou "permission-denied", revise as regras do Firestore no Console do Firebase.');
   });
 }
@@ -1275,24 +1275,13 @@ async function sendChatMessage(forcedText){
   renderThinking();
 
   try{
-    // Stringified config passível de injeção direta no iframe gerado para sincronizar banco automaticamente
-    const currentConfigString = JSON.stringify(firebaseConfig);
+    const systemPrompt = `Você é um gerador de código especializado em criar aplicações web completas e 100% funcionais em um ÚNICO arquivo HTML (com CSS e JS embutidos), sem dependências de compilação externas. 
 
-    const systemPrompt = `Você é um gerador de código avançado no-code profissional focado em criar microssistemas e aplicações web robustas (estilo Lovable e v0) em um ÚNICO arquivo HTML estruturado (com CSS moderno e Javascript dinâmico inclusos). 
-
-DIRETRIZ CRÍTICA DE FUNCIONALIDADE E PERSISTÊNCIA:
-1. Os aplicativos que você cria NÃO podem ser apenas telas de visualização estática ou usar LocalStorage volátil. Eles precisam ser 100% operacionais e funcionais.
-2. Você DEVE obrigatoriamente realizar a integração com banco de dados em tempo real usando o Firebase Firestore para armazenar qualquer informação dinâmica manipulada no app (ex: transações, tarefas, usuários, registros, etc).
-3. Para fazer isso, importe sempre os scripts necessários do Firebase versão compat:
-   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"><\/script>
-   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"><\/script>
-4. Inicialize o banco de dados utilizando EXATAMENTE estas credenciais dinâmicas do projeto do usuário:
-   const firebaseConfig = ${currentConfigString};
-   if(!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-   const db = firebase.firestore();
-5. Toda vez que o usuário interagir salvando, alterando, deletando ou listando itens, use o objeto 'db.collection()' para persistir os dados em coleções apropriadas no Firestore, garantindo o funcionamento do CRUD.
-
-Sempre responda APENAS com o código HTML completo, começando com <!DOCTYPE html> e nada mais — sem explicações antes ou depois, sem markdown, sem crases. Se o usuário já tinha um código anterior (fornecido abaixo), edite e melhore esse código existente ao invés de recomeçar do zero.
+Regras Críticas para Evitar Erros de Execução no Preview:
+1. Se decidir usar o framework Alpine.js (importando via cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js), certifique-se de que TODAS as propriedades, estados e funções declarados ou chamados pelas diretivas do HTML (como x-data, x-show, x-text, @click, x-model, etc.) existam explicitamente inicializados e definidos dentro do objeto de escopo 'x-data' ou do script global correspondente. Nunca faça referência a propriedades como 'currentTab', 'stats', 'openQuickAddModal', etc., sem as ter declarado no JS, para evitar exceções fatais de 'Uncaught ReferenceError'.
+2. Se utilizar Vanilla JS puro com acionamento inline (como onclick="switchView('dashboard')" ou onclick="openTransactionModal()"), certifique-se de forma absoluta de que todas essas funções e variáveis estão declaradas globalmente e acessíveis na tag <script>.
+3. Mantenha os blocos de estado independentes e certifique-se de que tags de script necessárias no <head> (Tailwind CSS, Alpine.js ou FontAwesome) sejam incluídas corretamente.
+4. Responda APENAS com o código HTML completo e limpo, começando com <!DOCTYPE html> e nada mais — sem nenhuma explicação de texto antes ou depois, sem markdown, sem blocos de crase (\`\`\`html). Se o usuário já tinha um código anterior (fornecido abaixo), edite e melhore esse código existente de forma incremental em vez de reiniciar do zero. Se uma imagem for anexada, use-a como referência visual ou funcional direta.
 
 ${currentProjectCode ? 'CÓDIGO ATUAL DO PROJETO:\n' + currentProjectCode : 'Não há código ainda — este é o primeiro pedido.'}`;
 
@@ -1328,7 +1317,7 @@ ${currentProjectCode ? 'CÓDIGO ATUAL DO PROJETO:\n' + currentProjectCode : 'Nã
     const cleanCode = rawText.replace(/^```html\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
 
     removeThinking();
-    renderMessage('ai', 'Pronto! Atualizei o preview ao lado com as mudanças e integrei o banco de dados Firebase.');
+    renderMessage('ai', 'Pronto! Atualizei o preview ao lado com as mudanças.');
     chatHistory.push({role:'ai', content:'Código gerado/atualizado.'});
 
     currentProjectCode = cleanCode;
