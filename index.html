@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forja — Crie apps conversando com IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..900&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --bg: #13121a;
+  --bg-deep: #0a0a0f;
+  --surface: #1b1a24;
+  --surface-2: #232230;
+  --border: #2e2c3c;
+  --text: #f2efe9;
+  --text-dim: #a9a6b8;
+  --text-faint: #6f6c80;
+  --accent: #ff7a45;
+  --accent-dim: #c75a30;
+  --code-green: #7fe7a3;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --font-display: 'Fraunces', serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-body: 'Inter', sans-serif;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+img{max-width:100%;display:block;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+input,textarea{font-family:inherit;color:inherit;background:none;border:none;outline:none;}
+::selection{background:var(--accent);color:#13121a;}
+
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px;}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important;}
+}
+
+.container{max-width:1180px;margin:0 auto;padding:0 28px;}
+
+/* ============ BACKGROUND TEXTURE ============ */
+.grain-bg{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 800px 500px at 15% -10%, rgba(255,122,69,0.10), transparent 60%),
+    radial-gradient(ellipse 700px 600px at 100% 20%, rgba(127,231,163,0.05), transparent 55%),
+    var(--bg);
+}
+.grain-bg::after{
+  content:'';position:absolute;inset:0;opacity:0.035;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============ NAV ============ */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:20px 28px;
+  background:rgba(19,18,26,0.7);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid transparent;
+  transition:border-color .3s, background .3s;
+}
+.nav.scrolled{border-bottom-color:var(--border);background:rgba(19,18,26,0.92);}
+.nav-inner{max-width:1180px;margin:0 auto;width:100%;display:flex;align-items:center;justify-content:space-between;}
+.logo{
+  display:flex;align-items:center;gap:9px;
+  font-family:var(--font-display);font-weight:700;font-size:21px;letter-spacing:-0.01em;
+}
+.logo-mark{
+  width:26px;height:26px;border-radius:7px;
+  background:linear-gradient(135deg,var(--accent),var(--accent-dim));
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--bg-deep);
+  flex-shrink:0;
+}
+.nav-links{display:flex;align-items:center;gap:34px;}
+.nav-links a{
+  font-size:14.5px;color:var(--text-dim);transition:color .2s;
+}
+.nav-links a:hover{color:var(--text);}
+.nav-actions{display:flex;align-items:center;gap:10px;}
+.nav-cta-secondary{font-size:14.5px;color:var(--text-dim);padding:9px 16px;transition:color .2s;}
+.nav-cta-secondary:hover{color:var(--text);}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:10px 19px;border-radius:9px;font-size:14.5px;font-weight:600;
+  transition:transform .15s, box-shadow .15s, background .15s;
+  white-space:nowrap;
+}
+.btn-primary{
+  background:var(--accent);color:#1a0f08;
+  box-shadow:0 1px 0 rgba(255,255,255,0.15) inset, 0 6px 18px -8px rgba(255,122,69,0.6);
+}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 1px 0 rgba(255,255,255,0.2) inset, 0 10px 22px -8px rgba(255,122,69,0.75);}
+.btn-ghost{background:var(--surface);border:1px solid var(--border);color:var(--text);}
+.btn-ghost:hover{background:var(--surface-2);}
+.btn-sm{padding:7px 14px;font-size:13.5px;}
+
+@media (max-width:860px){
+  .nav-links{display:none;}
+}
+
+/* ============ HERO ============ */
+.hero{
+  position:relative;z-index:1;
+  padding:170px 28px 90px;
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+}
+.eyebrow{
+  font-family:var(--font-mono);font-size:12.5px;letter-spacing:0.06em;color:var(--code-green);
+  display:flex;align-items:center;gap:8px;margin-bottom:22px;
+}
+.eyebrow::before{
+  content:'';width:6px;height:6px;border-radius:50%;background:var(--code-green);
+  box-shadow:0 0 0 0 rgba(127,231,163,0.6);
+  animation:pulse-dot 2s infinite;
+}
+@keyframes pulse-dot{
+  0%{box-shadow:0 0 0 0 rgba(127,231,163,0.5);}
+  70%{box-shadow:0 0 0 6px rgba(127,231,163,0);}
+  100%{box-shadow:0 0 0 0 rgba(127,231,163,0);}
+}
+.hero h1{
+  font-family:var(--font-display);
+  font-weight:600;
+  font-size:clamp(40px, 6.4vw, 78px);
+  line-height:1.04;
+  letter-spacing:-0.015em;
+  max-width:880px;
+  font-variation-settings:'opsz' 80;
+}
+.hero h1 em{
+  font-style:italic;font-weight:500;color:var(--accent);
+}
+.hero-sub{
+  margin-top:22px;font-size:18px;line-height:1.55;color:var(--text-dim);
+  max-width:560px;
+}
+.hero-sub b{color:var(--text);font-weight:600;}
+
+/* prompt box - signature element */
+.prompt-box{
+  margin-top:46px;width:100%;max-width:680px;
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  box-shadow:0 30px 60px -25px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.02) inset;
+  overflow:hidden;
+  text-align:left;
+}
+.prompt-box-bar{
+  display:flex;align-items:center;gap:7px;padding:12px 16px;border-bottom:1px solid var(--border);
+}
+.prompt-box-bar span{width:9px;height:9px;border-radius:50%;}
+.prompt-box-bar span:nth-child(1){background:#ff5f56;}
+.prompt-box-bar span:nth-child(2){background:#ffbd2e;}
+.prompt-box-bar span:nth-child(3){background:#27c93f;}
+.prompt-box-bar small{
+  margin-left:8px;font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint);
+}
+.prompt-box-body{padding:18px 20px;}
+.prompt-typed{
+  font-family:var(--font-mono);font-size:15px;line-height:1.6;color:var(--text);
+  min-height:52px;
+}
+.prompt-typed .cursor{
+  display:inline-block;width:2px;height:16px;background:var(--accent);
+  vertical-align:middle;margin-left:2px;animation:blink 1s step-end infinite;
+}
+@keyframes blink{50%{opacity:0;}}
+.prompt-box-footer{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;border-top:1px solid var(--border);background:rgba(255,255,255,0.015);
+}
+.prompt-suggestions{display:flex;gap:7px;flex-wrap:wrap;}
+.chip{
+  font-size:12.5px;padding:6px 11px;border-radius:99px;background:var(--surface-2);
+  border:1px solid var(--border);color:var(--text-dim);transition:all .15s;
+}
+.chip:hover{border-color:var(--accent-dim);color:var(--text);}
+.prompt-box-footer .btn{flex-shrink:0;}
+
+.hero-trust{
+  margin-top:54px;font-family:var(--font-mono);font-size:12px;color:var(--text-faint);
+  letter-spacing:0.04em;
+}
+
+/* ============ HOW IT WORKS ============ */
+.section{position:relative;z-index:1;padding:100px 28px;}
+.section-head{max-width:640px;margin:0 auto 56px;text-align:center;}
+.section-eyebrow{
+  font-family:var(--font-mono);font-size:12px;color:var(--accent);letter-spacing:0.08em;
+  margin-bottom:14px;display:block;
+}
+.section-head h2{
+  font-family:var(--font-display);font-weight:600;font-size:clamp(28px,3.6vw,42px);
+  letter-spacing:-0.01em;line-height:1.15;
+}
+.section-head p{margin-top:14px;color:var(--text-dim);font-size:16px;line-height:1.6;}
+
+.steps{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:28px;max-width:1100px;margin:0 auto;
+}
+.step-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:28px 26px;position:relative;overflow:hidden;
+}
+.step-card .step-tag{
+  font-family:var(--font-mono);font-size:12px;color:var(--text-faint);margin-bottom:18px;display:block;
+}
+.step-card h3{font-family:var(--font-display);font-size:21px;font-weight:600;margin-bottom:10px;}
+.step-card p{color:var(--text-dim);font-size:14.5px;line-height:1.6;}
+.step-card .step-visual{
+  height:130px;border-radius:10px;margin-top:18px;
+  background:var(--surface-2);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:12px;color:var(--text-faint);
+  position:relative;
+}
+@media (max-width:860px){.steps{grid-template-columns:1fr;}}
+
+/* ============ TEMPLATES ============ */
+.templates-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:18px;max-width:1180px;margin:0 auto;
+}
+.template-card{
+  border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);background:var(--surface);
+  cursor:pointer;transition:transform .2s, border-color .2s;
+}
+.template-card:hover{transform:translateY(-3px);border-color:var(--accent-dim);}
+.template-thumb{
+  height:140px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-size:15px;color:var(--text-faint);
+  position:relative;overflow:hidden;
+}
+.template-info{padding:14px 16px;}
+.template-info h4{font-size:14.5px;font-weight:600;margin-bottom:3px;}
+.template-info span{font-size:12.5px;color:var(--text-faint);}
+@media (max-width:980px){.templates-grid{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:560px){.templates-grid{grid-template-columns:1fr;}}
+
+/* ============ STATS ============ */
+.stats-band{
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  padding:64px 28px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;
+  max-width:1180px;margin:0 auto;
+}
+.stat{text-align:center;}
+.stat .num{
+  font-family:var(--font-mono);font-weight:600;font-size:clamp(32px,4vw,48px);color:var(--accent);
+  letter-spacing:-0.02em;
+}
+.stat .label{margin-top:8px;color:var(--text-dim);font-size:14px;}
+@media (max-width:760px){.stats-band{grid-template-columns:1fr;gap:36px;}}
+
+/* ============ FINAL CTA ============ */
+.final-cta{
+  text-align:center;padding:120px 28px;position:relative;z-index:1;
+}
+.final-cta h2{
+  font-family:var(--font-display);font-weight:600;font-size:clamp(32px,5vw,56px);
+  letter-spacing:-0.015em;max-width:700px;margin:0 auto 26px;line-height:1.1;
+}
+.final-cta .btn{padding:14px 28px;font-size:16px;}
+
+/* ============ FOOTER ============ */
+footer{
+  border-top:1px solid var(--border);padding:60px 28px 32px;position:relative;z-index:1;
+}
+.footer-inner{max-width:1180px;margin:0 auto;}
+.footer-top{
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:40px;margin-bottom:48px;
+}
+.footer-brand{max-width:280px;}
+.footer-brand p{color:var(--text-faint);font-size:13.5px;margin-top:12px;line-height:1.6;}
+.footer-cols{display:flex;gap:56px;flex-wrap:wrap;}
+.footer-col h5{
+  font-family:var(--font-mono);font-size:12px;color:var(--text-faint);letter-spacing:0.05em;
+  margin-bottom:16px;
+}
+.footer-col a{
+  display:block;font-size:14px;color:var(--text-dim);margin-bottom:11px;transition:color .15s;
+}
+.footer-col a:hover{color:var(--text);}
+.footer-bottom{
+  border-top:1px solid var(--border);padding-top:24px;
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;
+  font-size:13px;color:var(--text-faint);
+}
+
+/* ============ SCROLL REVEAL ============ */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease;}
+.reveal.in{opacity:1;transform:translateY(0);}
+
+/* ============ APP SHELL (auth/dashboard) ============ */
+.app-view{display:none;min-height:100vh;position:relative;z-index:2;}
+.app-view.active{display:block;}
+#landingView.hidden{display:none;}
+
+/* Auth screen */
+.auth-screen{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  padding:24px;position:relative;z-index:1;
+}
+.auth-card{
+  width:100%;max-width:400px;background:var(--surface);border:1px solid var(--border);
+  border-radius:18px;padding:36px 32px;box-shadow:0 30px 60px -25px rgba(0,0,0,0.6);
+}
+.auth-card .logo{justify-content:center;margin-bottom:24px;}
+.auth-card h2{
+  font-family:var(--font-display);font-size:24px;text-align:center;margin-bottom:6px;font-weight:600;
+}
+.auth-card .sub{text-align:center;color:var(--text-dim);font-size:14px;margin-bottom:28px;}
+.field{margin-bottom:16px;}
+.field label{
+  display:block;font-size:12.5px;color:var(--text-dim);margin-bottom:7px;font-family:var(--font-mono);
+}
+.field input{
+  width:100%;padding:11px 14px;background:var(--bg-deep);border:1px solid var(--border);
+  border-radius:9px;font-size:14.5px;transition:border-color .15s;
+}
+.field input:focus{border-color:var(--accent-dim);}
+.auth-card .btn{width:100%;padding:12px;margin-top:6px;font-size:15px;}
+.auth-switch{text-align:center;margin-top:20px;font-size:13.5px;color:var(--text-dim);}
+.auth-switch button{color:var(--accent);font-weight:600;}
+.auth-error{
+  background:rgba(255,90,90,0.1);border:1px solid rgba(255,90,90,0.3);color:#ff9a9a;
+  font-size:13px;padding:10px 13px;border-radius:8px;margin-bottom:16px;display:none;
+}
+.auth-back{
+  position:absolute;top:24px;left:28px;display:flex;align-items:center;gap:7px;
+  font-size:14px;color:var(--text-dim);
+}
+.auth-back:hover{color:var(--text);}
+
+/* config notice */
+.config-notice{
+  position:fixed;bottom:18px;right:18px;z-index:200;max-width:340px;
+  background:var(--surface);border:1px solid var(--accent-dim);border-radius:12px;
+  padding:14px 16px;font-size:13px;color:var(--text-dim);box-shadow:0 20px 40px -20px rgba(0,0,0,0.7);
+}
+.config-notice strong{color:var(--accent);display:block;margin-bottom:4px;font-size:13.5px;}
+.config-notice code{
+  font-family:var(--font-mono);font-size:11.5px;background:var(--bg-deep);
+  padding:2px 5px;border-radius:4px;
+}
+.config-notice button{
+  position:absolute;top:8px;right:10px;color:var(--text-faint);font-size:16px;
+}
+
+/* ============ DASHBOARD ============ */
+.dash-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 28px;border-bottom:1px solid var(--border);
+  background:rgba(19,18,26,0.85);backdrop-filter:blur(12px);
+  position:sticky;top:0;z-index:50;
+}
+.dash-user{display:flex;align-items:center;gap:12px;}
+.dash-avatar{
+  width:32px;height:32px;border-radius:50%;background:var(--surface-2);
+  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--accent);
+}
+.dash-user-name{font-size:14px;font-weight:600;}
+.dash-user-email{font-size:12px;color:var(--text-faint);}
+.dash-logout{font-size:13.5px;color:var(--text-dim);}
+.dash-logout:hover{color:var(--text);}
+
+.dash-body{max-width:1100px;margin:0 auto;padding:48px 28px 80px;position:relative;z-index:1;}
+.dash-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:16px;}
+.dash-head h1{font-family:var(--font-display);font-size:30px;font-weight:600;}
+.dash-head p{color:var(--text-dim);font-size:14.5px;margin-top:4px;}
+
+.projects-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+@media (max-width:900px){.projects-grid{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:600px){.projects-grid{grid-template-columns:1fr;}}
+
+.project-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;cursor:pointer;transition:border-color .2s, transform .2s;
+}
+.project-card:hover{border-color:var(--accent-dim);transform:translateY(-2px);}
+.project-thumb{
+  height:120px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:24px;color:var(--text-faint);
+}
+.project-info{padding:16px 18px;}
+.project-info h4{font-size:15px;font-weight:600;margin-bottom:4px;}
+.project-info span{font-size:12.5px;color:var(--text-faint);font-family:var(--font-mono);}
+
+.new-project-card{
+  border:1.5px dashed var(--border);border-radius:var(--radius);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  min-height:188px;cursor:pointer;transition:border-color .2s,background .2s;color:var(--text-dim);
+}
+.new-project-card:hover{border-color:var(--accent-dim);background:rgba(255,122,69,0.04);color:var(--text);}
+.new-project-card .plus{
+  width:38px;height:38px;border-radius:50%;background:var(--surface-2);
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+}
+
+.empty-state{
+  text-align:center;padding:80px 20px;color:var(--text-dim);
+}
+.empty-state h3{font-family:var(--font-display);font-size:22px;color:var(--text);margin-bottom:8px;}
+.empty-state p{font-size:14.5px;margin-bottom:24px;}
+
+/* ============ BUILDER (chat + preview) ============ */
+.builder-view{display:none;height:100vh;flex-direction:column;position:relative;z-index:5;background:var(--bg-deep);}
+.builder-view.active{display:flex;}
+.builder-topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 20px;border-bottom:1px solid var(--border);background:var(--bg-deep);
+  flex-shrink:0;
+}
+.builder-topbar-left{display:flex;align-items:center;gap:14px;}
+.builder-back{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text-dim);}
+.builder-back:hover{color:var(--text);}
+.builder-title{
+  font-size:14px;font-weight:600;background:none;border:none;color:var(--text);
+  padding:5px 9px;border-radius:6px;max-width:240px;
+}
+.builder-title:hover, .builder-title:focus{background:var(--surface);}
+.builder-status{
+  font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint);
+  display:flex;align-items:center;gap:6px;
+}
+.builder-main{flex:1;display:flex;overflow:hidden;}
+
+/* chat pane */
+.chat-pane{
+  width:400px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--border);
+  background:var(--bg);
+}
+.chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;}
+.msg{max-width:100%;}
+.msg-role{
+  font-family:var(--font-mono);font-size:11px;color:var(--text-faint);margin-bottom:6px;
+  display:flex;align-items:center;gap:6px;
+}
+.msg-role.ai{color:var(--code-green);}
+.msg-bubble{
+  font-size:14px;line-height:1.55;color:var(--text);
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;
+}
+.msg.user .msg-bubble{background:var(--surface-2);}
+.msg-bubble pre{
+  background:var(--bg-deep);border-radius:8px;padding:10px 12px;overflow-x:auto;
+  font-family:var(--font-mono);font-size:12px;margin-top:8px;border:1px solid var(--border);
+}
+.msg-bubble.thinking{display:flex;align-items:center;gap:8px;color:var(--text-dim);}
+.dot-flash{display:inline-flex;gap:3px;}
+.dot-flash span{width:5px;height:5px;border-radius:50%;background:var(--code-green);animation:dotflash 1.2s infinite;}
+.dot-flash span:nth-child(2){animation-delay:0.2s;}
+.dot-flash span:nth-child(3){animation-delay:0.4s;}
+@keyframes dotflash{0%,80%,100%{opacity:0.25;}40%{opacity:1;}}
+
+.chat-input-area{border-top:1px solid var(--border);padding:14px;flex-shrink:0;}
+.chat-input-box{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.chat-input-box textarea{
+  padding:12px 14px;font-size:14px;resize:none;min-height:44px;max-height:140px;line-height:1.5;
+}
+.chat-input-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-top:1px solid var(--border);}
+.attach-preview{display:none;align-items:center;gap:10px;padding:0 14px 10px;}
+.attach-preview.active{display:flex;}
+.attach-preview img{width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--border);}
+.attach-preview span{font-size:12.5px;color:var(--text-dim);flex:1;}
+.attach-preview button{font-size:13px;color:var(--text-faint);}
+.attach-preview button:hover{color:var(--text);}
+.msg-bubble img.attached-thumb{
+  width:100%;max-width:220px;border-radius:8px;margin-bottom:8px;display:block;border:1px solid var(--border);
+}
+
+/* preview pane */
+.preview-pane{flex:1;display:flex;flex-direction:column;background:var(--bg-deep);}
+.preview-toolbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 16px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.preview-tabs{display:flex;gap:4px;background:var(--surface);border-radius:8px;padding:3px;}
+.preview-tab{
+  font-size:13px;padding:6px 13px;border-radius:6px;color:var(--text-dim);
+}
+.preview-tab.active{background:var(--surface-2);color:var(--text);}
+.preview-frame-wrap{flex:1;position:relative;background:#0c0c11;}
+.preview-frame-wrap iframe{width:100%;height:100%;border:none;background:#fff;}
+.code-view{
+  flex:1;overflow:auto;padding:18px 22px;font-family:var(--font-mono);font-size:13px;
+  line-height:1.6;color:#d8d5e6;white-space:pre-wrap;display:none;
+}
+.code-view.active{display:block;}
+.preview-frame-wrap.active{display:block;}
+.preview-frame-wrap{display:block;}
+.preview-empty{
+  height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  color:var(--text-faint);
+}
+.preview-empty .icon{
+  width:56px;height:56px;border-radius:14px;background:var(--surface);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:24px;
+}
+.preview-empty p{font-size:14px;max-width:260px;text-align:center;}
+
+.api-key-banner{
+  display:flex;align-items:center;gap:10px;padding:10px 16px;
+  background:rgba(255,122,69,0.07);border-bottom:1px solid var(--border);font-size:13px;color:var(--text-dim);
+}
+.api-key-banner input{
+  flex:1;background:var(--bg-deep);border:1px solid var(--border);border-radius:7px;
+  padding:7px 11px;font-size:13px;font-family:var(--font-mono);
+}
+.api-key-banner button{flex-shrink:0;}
+
+@media (max-width:760px){
+  .chat-pane{width:100%;position:absolute;inset:0;z-index:10;}
+  .builder-main{position:relative;}
+}
+</style>
+</head>
+<body>
+
+<div class="grain-bg"></div>
+
+<!-- ===================== LANDING VIEW ===================== -->
+<div id="landingView" class="app-view active">
+
+  <nav class="nav" id="mainNav">
+    <div class="nav-inner">
+      <div class="logo"><span class="logo-mark">{ }</span>Forja</div>
+      <div class="nav-links">
+        <a href="#como-funciona">Como funciona</a>
+        <a href="#modelos">Modelos</a>
+        <a href="#numeros">Números</a>
+      </div>
+      <div class="nav-actions">
+        <button class="nav-cta-secondary" onclick="showAuth('login')">Entrar</button>
+        <button class="btn btn-primary" onclick="showAuth('signup')">Começar a criar</button>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <span class="eyebrow">IA PRONTA PARA CONSTRUIR</span>
+    <h1>Descreva o app.<br>Veja-o <em>nascer</em>.</h1>
+    <p class="hero-sub">Escreva o que você quer em português simples. A IA escreve o código, monta a tela e te entrega um app rodando — <b>sem trocar de janela</b>.</p>
+
+    <div class="prompt-box">
+      <div class="prompt-box-bar">
+        <span></span><span></span><span></span>
+        <small>forja — novo projeto</small>
+      </div>
+      <div class="prompt-box-body">
+        <div class="prompt-typed" id="typedPrompt"><span class="cursor"></span></div>
+      </div>
+      <div class="prompt-box-footer">
+        <div class="prompt-suggestions">
+          <span class="chip">App de finanças</span>
+          <span class="chip">Landing page</span>
+          <span class="chip">Painel de tarefas</span>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="showAuth('signup')">Construir →</button>
+      </div>
+    </div>
+
+    <div class="hero-trust">USADO PARA PROTOTIPAR APPS, PAINÉIS E SITES TODOS OS DIAS</div>
+  </header>
+
+  <section class="section" id="como-funciona">
+    <div class="section-head reveal">
+      <span class="section-eyebrow">O PROCESSO</span>
+      <h2>Da ideia ao app funcionando, em três etapas</h2>
+      <p>Cada etapa existe porque o passo anterior gerou o que ela precisa — não é decoração, é a esteira real de construção.</p>
+    </div>
+    <div class="steps">
+      <div class="step-card reveal">
+        <span class="step-tag">ETAPA 1 / DESCREVER</span>
+        <h3>Conte o que você quer</h3>
+        <p>Descreva sua ideia em uma frase, ou cole um link de referência. Sem termos técnicos — só o que o app deve fazer.</p>
+        <div class="step-visual">"um app para controlar gastos do mês"</div>
+      </div>
+      <div class="step-card reveal">
+        <span class="step-tag">ETAPA 2 / CONSTRUIR</span>
+        <h3>Veja o código nascer</h3>
+        <p>A IA escreve a tela, a lógica e os dados em tempo real, e você acompanha o resultado num preview ao vivo, lado a lado.</p>
+        <div class="step-visual">gerando componentes…</div>
+      </div>
+      <div class="step-card reveal">
+        <span class="step-tag">ETAPA 3 / PUBLICAR</span>
+        <h3>Ajuste e publique</h3>
+        <p>Peça mudanças por texto — "muda a cor", "adiciona um gráfico" — e publique para o mundo com um link só seu.</p>
+        <div class="step-visual">app.forja.dev/seu-projeto</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="modelos">
+    <div class="section-head reveal">
+      <span class="section-eyebrow">PONTOS DE PARTIDA</span>
+      <h2>Comece de um modelo</h2>
+      <p>Cada modelo já vem com estrutura e estilo prontos — você ajusta o que for seu a partir daí.</p>
+    </div>
+    <div class="templates-grid" id="templatesGrid"></div>
+  </section>
+
+  <section class="section" id="numeros">
+    <div class="stats-band reveal">
+      <div class="stat">
+        <div class="num" data-count="48">0</div>
+        <div class="label">mil projetos criados na plataforma</div>
+      </div>
+      <div class="stat">
+        <div class="num" data-count="3200">0</div>
+        <div class="label">novos projetos por semana</div>
+      </div>
+      <div class="stat">
+        <div class="num" data-count="92">0</div>
+        <div class="label">mil visitas mensais aos apps criados</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="final-cta reveal">
+    <h2>Sua próxima ideia está a uma frase de distância.</h2>
+    <button class="btn btn-primary" onclick="showAuth('signup')">Começar a criar — é grátis</button>
+  </section>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <div class="logo"><span class="logo-mark">{ }</span>Forja</div>
+          <p>Uma plataforma para transformar descrições em apps reais, com IA, do primeiro rascunho à publicação.</p>
+        </div>
+        <div class="footer-cols">
+          <div class="footer-col">
+            <h5>PRODUTO</h5>
+            <a href="#como-funciona">Como funciona</a>
+            <a href="#modelos">Modelos</a>
+            <a href="#numeros">Números</a>
+          </div>
+          <div class="footer-col">
+            <h5>CONTA</h5>
+            <a onclick="showAuth('login')" href="javascript:void(0)">Entrar</a>
+            <a onclick="showAuth('signup')" href="javascript:void(0)">Criar conta</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 Forja. Feito com IA, para construir com IA.</span>
+        <span>Projeto de demonstração</span>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- ===================== AUTH VIEW ===================== -->
+<div id="authView" class="app-view">
+  <div class="auth-screen">
+    <a class="auth-back" href="javascript:void(0)" onclick="backToLanding()">← Voltar</a>
+    <div class="auth-card">
+      <div class="logo"><span class="logo-mark">{ }</span>Forja</div>
+      <h2 id="authTitle">Bem-vindo de volta</h2>
+      <p class="sub" id="authSub">Entre para continuar seus projetos</p>
+      <div class="auth-error" id="authError"></div>
+      <div id="signupNameField" class="field" style="display:none;">
+        <label>NOME</label>
+        <input type="text" id="authName" placeholder="Seu nome">
+      </div>
+      <div class="field">
+        <label>E-MAIL</label>
+        <input type="email" id="authEmail" placeholder="voce@email.com">
+      </div>
+      <div class="field">
+        <label>SENHA</label>
+        <input type="password" id="authPassword" placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary" id="authSubmitBtn" onclick="submitAuth()">Entrar</button>
+      <div class="auth-switch" id="authSwitch">
+        Não tem conta? <button onclick="showAuth('signup')">Criar uma</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== DASHBOARD VIEW ===================== -->
+<div id="dashboardView" class="app-view">
+  <nav class="dash-nav">
+    <div class="logo"><span class="logo-mark">{ }</span>Forja</div>
+    <div class="dash-user">
+      <div class="dash-avatar" id="dashAvatar">?</div>
+      <div>
+        <div class="dash-user-name" id="dashUserName">—</div>
+        <div class="dash-user-email" id="dashUserEmail">—</div>
+      </div>
+      <button class="dash-logout" onclick="doLogout()">Sair</button>
+    </div>
+  </nav>
+  <div class="dash-body">
+    <div class="dash-head">
+      <div>
+        <h1>Seus projetos</h1>
+        <p>Continue de onde parou ou comece algo novo.</p>
+      </div>
+    </div>
+    <div class="projects-grid" id="projectsGrid">
+      <div class="new-project-card" onclick="createProject()">
+        <div class="plus">+</div>
+        <span>Novo projeto</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== BUILDER VIEW ===================== -->
+<div id="builderView" class="builder-view">
+  <div class="builder-topbar">
+    <div class="builder-topbar-left">
+      <a class="builder-back" href="javascript:void(0)" onclick="backToDashboard()">← Projetos</a>
+      <input class="builder-title" id="builderTitle" value="Novo projeto" onchange="renameProject(this.value)" onkeydown="if(event.key==='Enter'){ event.preventDefault(); this.blur(); }">
+    </div>
+    <div class="builder-status" id="builderStatus"><span>●</span> salvo</div>
+  </div>
+  <div class="api-key-banner" id="apiKeyBanner">
+    <span>🔑 Cole sua chave da API do Gemini (gratuita) para gerar código de verdade:</span>
+    <input type="password" id="apiKeyInput" placeholder="AIzaSy...">
+    <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--accent);white-space:nowrap;">Pegar chave grátis →</a>
+    <button class="btn btn-ghost btn-sm" onclick="saveApiKey()">Salvar</button>
+  </div>
+  <div class="builder-main">
+    <div class="chat-pane">
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-area">
+        <div id="attachPreview" class="attach-preview"></div>
+        <div class="chat-input-box">
+          <textarea id="chatInput" placeholder="Descreva o que você quer construir ou mudar…" onkeydown="handleChatKeydown(event)"></textarea>
+          <div class="chat-input-bar">
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('imageAttachInput').click()" title="Anexar captura de tela ou imagem">📎 Anexar</button>
+            <input type="file" id="imageAttachInput" accept="image/*" style="display:none;" onchange="handleImageAttach(event)">
+            <button class="btn btn-primary btn-sm" onclick="sendChatMessage()">Enviar →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="preview-pane">
+      <div class="preview-toolbar">
+        <div class="preview-tabs">
+          <button class="preview-tab active" id="tabPreview" onclick="switchPreviewTab('preview')">Visualização</button>
+          <button class="preview-tab" id="tabCode" onclick="switchPreviewTab('code')">Código</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span id="publishedBadge" style="display:none;font-size:12.5px;color:var(--code-green);font-family:var(--font-mono);"></span>
+          <button class="btn btn-ghost btn-sm" onclick="downloadProjectCode()">Baixar HTML</button>
+          <button class="btn btn-primary btn-sm" onclick="publishProject()">🚀 Publicar</button>
+        </div>
+      </div>
+      <div class="preview-frame-wrap active" id="previewFrameWrap">
+        <div class="preview-empty" id="previewEmpty">
+          <div class="icon">◌</div>
+          <p>Descreva seu app na conversa ao lado para ver o preview aparecer aqui.</p>
+        </div>
+        <iframe id="previewFrame" style="display:none;"></iframe>
+      </div>
+      <div class="code-view" id="codeView"></div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+/* ---------- typing animation ---------- */
+const typedEl = document.getElementById('typedPrompt');
+const phrases = [
+  'um app para controlar minhas finanças pessoais',
+  'uma landing page para meu estúdio de design',
+  'um painel de tarefas estilo kanban para minha equipe',
+  'um app de checkers online multiplayer'
+];
+let pIdx = 0, charIdx = 0, deleting = false;
+function typeLoop(){
+  const text = phrases[pIdx];
+  if(!deleting){
+    charIdx++;
+    typedEl.innerHTML = text.slice(0,charIdx) + '<span class="cursor"></span>';
+    if(charIdx === text.length){ deleting = true; setTimeout(typeLoop, 1800); return; }
+  } else {
+    charIdx--;
+    typedEl.innerHTML = text.slice(0,charIdx) + '<span class="cursor"></span>';
+    if(charIdx === 0){ deleting = false; pIdx = (pIdx+1)%phrases.length; }
+  }
+  setTimeout(typeLoop, deleting ? 28 : 42);
+}
+typeLoop();
+
+/* ---------- nav scroll state ---------- */
+window.addEventListener('scroll', ()=>{
+  document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 8);
+});
+
+/* ---------- scroll reveal ---------- */
+const revealEls = document.querySelectorAll('.reveal');
+const io = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('in'); });
+},{threshold:0.15});
+revealEls.forEach(el=>io.observe(el));
+
+/* ---------- stat counters ---------- */
+const statEls = document.querySelectorAll('.stat .num');
+let countersStarted = false;
+const statsIo = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting && !countersStarted){
+      countersStarted = true;
+      statEls.forEach(el=>{
+        const target = parseInt(el.dataset.count,10);
+        let cur = 0;
+        const step = Math.max(1, Math.ceil(target/60));
+        const t = setInterval(()=>{
+          cur += step;
+          if(cur >= target){ cur = target; clearInterval(t); }
+          el.textContent = cur.toLocaleString('pt-BR');
+        }, 25);
+      });
+    }
+  });
+},{threshold:0.4});
+const statsBand = document.querySelector('.stats-band');
+if(statsBand) statsIo.observe(statsBand);
+
+/* ---------- templates grid ---------- */
+const templates = [
+  {name:'Controle Financeiro', cat:'App · Finanças', prompt:'Crie um app de controle financeiro pessoal com formulário para adicionar receitas e despesas, lista de transações e um resumo com total de entradas, saídas e saldo.'},
+  {name:'Loja de Roupas', cat:'Site · E-commerce', prompt:'Crie uma landing page de uma loja de roupas, com vitrine de produtos em grade, cada um com imagem placeholder, nome, preço e botão de adicionar ao carrinho.'},
+  {name:'Painel Kanban', cat:'App · Produtividade', prompt:'Crie um painel kanban com três colunas (A Fazer, Em Andamento, Concluído), permitindo adicionar cartões de tarefas e arrastar entre as colunas.'},
+  {name:'Portfólio Criativo', cat:'Site · Portfólio', prompt:'Crie uma página de portfólio criativo, com seção de apresentação, uma grade de projetos com imagem e título, e uma seção de contato.'},
+  {name:'Rastreador de Hábitos', cat:'App · SaaS', prompt:'Crie um app de rastreador de hábitos diários, onde o usuário pode adicionar hábitos, marcar como concluído no dia, e ver uma contagem de sequência (streak) para cada um.'},
+  {name:'Blog Pessoal', cat:'Site · Blog', prompt:'Crie um blog pessoal simples, com uma lista de posts (título, data e resumo) e uma página de leitura para cada post.'},
+  {name:'Damas Online', cat:'App · Jogo', prompt:'Crie um jogo de damas funcional para dois jogadores no mesmo dispositivo, com tabuleiro 8x8, peças clicáveis e regras básicas de movimento e captura.'},
+  {name:'Chat em Tempo Real', cat:'App · Mensagens', prompt:'Crie a interface de um app de chat estilo mensageiro, com lista de conversas à esquerda e uma janela de mensagens à direita, com campo para digitar e enviar.'}
+];
+const grid = document.getElementById('templatesGrid');
+templates.forEach((t,i)=>{
+  const hueShift = i%2===0 ? 'rgba(255,122,69,0.12)' : 'rgba(127,231,163,0.08)';
+  const card = document.createElement('div');
+  card.className = 'template-card reveal';
+  card.innerHTML = `
+    <div class="template-thumb" style="background:linear-gradient(135deg, ${hueShift}, transparent 70%), var(--surface-2);">${t.name}</div>
+    <div class="template-info"><h4>${t.name}</h4><span>${t.cat}</span></div>
+  `;
+  card.onclick = ()=>startFromTemplate(t);
+  grid.appendChild(card);
+});
+revealEls.forEach(el=>io.observe(el)); // re-observe newly added
+document.querySelectorAll('.template-card.reveal').forEach(el=>io.observe(el));
+
+/* ---------- iniciar projeto a partir de um modelo ---------- */
+function startFromTemplate(template){
+  pendingTemplatePrompt = {name: template.name, prompt: template.prompt};
+  if(currentUser){
+    createProject(template.name, template.prompt);
+  } else {
+    showAuth('signup');
+  }
+}
+
+/* ---------- view switching ---------- */
+function showView(id){
+  document.querySelectorAll('.app-view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+function backToLanding(){ showView('landingView'); }
+
+let authMode = 'login';
+function showAuth(mode){
+  authMode = mode;
+  document.getElementById('authError').style.display='none';
+  if(mode==='login'){
+    document.getElementById('authTitle').textContent = 'Bem-vindo de volta';
+    document.getElementById('authSub').textContent = 'Entre para continuar seus projetos';
+    document.getElementById('signupNameField').style.display='none';
+    document.getElementById('authSubmitBtn').textContent='Entrar';
+    document.getElementById('authSwitch').innerHTML = 'Não tem conta? <button onclick="showAuth(\'signup\')">Criar uma</button>';
+  } else {
+    document.getElementById('authTitle').textContent = 'Crie sua conta';
+    document.getElementById('authSub').textContent = 'Comece a construir em segundos';
+    document.getElementById('signupNameField').style.display='block';
+    document.getElementById('authSubmitBtn').textContent='Criar conta';
+    document.getElementById('authSwitch').innerHTML = 'Já tem conta? <button onclick="showAuth(\'login\')">Entrar</button>';
+  }
+  showView('authView');
+}
+</script>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+/* =================================================================
+   CONFIGURAÇÃO DO FIREBASE
+   Substitua os valores abaixo pelos do seu projeto Firebase.
+   Console > Configurações do projeto > Seus apps > SDK config
+================================================================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyCwu9-ixCL2JjsfVZQmmQfCedcOR5IQhKY",
+  authDomain: "forja-ia.firebaseapp.com",
+  projectId: "forja-ia",
+  storageBucket: "forja-ia.firebasestorage.app",
+  messagingSenderId: "318677114483",
+  appId: "1:318677114483:web:a9ae7ac87f409c8ac1d406"
+};
+
+let firebaseReady = false;
+let auth, db;
+try{
+  if(!firebaseConfig.apiKey.includes('COLE_AQUI')){
+    firebase.initializeApp(firebaseConfig);
+    auth = firebase.auth();
+    db = firebase.firestore();
+    firebaseReady = true;
+  }
+}catch(e){ console.warn('Firebase não inicializado:', e); }
+
+if(!firebaseReady){
+  const notice = document.createElement('div');
+  notice.className = 'config-notice';
+  notice.innerHTML = `<button onclick="this.parentElement.remove()">×</button>
+    <strong>Configuração pendente</strong>
+    Cole sua config do Firebase na constante <code>firebaseConfig</code> no início do arquivo para ativar login e salvamento de projetos.`;
+  document.addEventListener('DOMContentLoaded', ()=>document.body.appendChild(notice));
+}
+
+/* =================================================================
+   ESTADO GLOBAL
+================================================================= */
+let currentUser = null;
+let currentProjectId = null;
+let currentProjectCode = '';
+let chatHistory = [];
+let geminiApiKey = localStorage.getItem('forja_gemini_key') || '';
+let pendingAttachment = null; // { base64, mimeType, name }
+let pendingTemplatePrompt = null; // { name, prompt } aguardando login/cadastro para iniciar
+
+/* =================================================================
+   AUTENTICAÇÃO
+================================================================= */
+function showAuthError(msg){
+  const el = document.getElementById('authError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function submitAuth(){
+  if(!firebaseReady){ showAuthError('Configure o Firebase primeiro (veja o aviso no canto da tela).'); return; }
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const name = document.getElementById('authName').value.trim();
+
+  if(!email || !password){ showAuthError('Preencha e-mail e senha.'); return; }
+
+  const btn = document.getElementById('authSubmitBtn');
+  btn.textContent = 'Aguarde…';
+
+  if(authMode === 'signup'){
+    if(!name){ showAuthError('Digite seu nome.'); btn.textContent='Criar conta'; return; }
+    auth.createUserWithEmailAndPassword(email, password)
+      .then(cred => cred.user.updateProfile({displayName:name}).then(()=>cred.user))
+      .then(user => renderDashboardForUser(user))
+      .catch(err=>{ showAuthError(traduzErro(err.code)); btn.textContent='Criar conta'; });
+  } else {
+    auth.signInWithEmailAndPassword(email, password)
+      .catch(err=>{ showAuthError(traduzErro(err.code)); btn.textContent='Entrar'; });
+  }
+}
+
+function traduzErro(code){
+  const map = {
+    'auth/email-already-in-use':'Esse e-mail já tem uma conta. Tente entrar.',
+    'auth/invalid-email':'E-mail inválido.',
+    'auth/weak-password':'A senha precisa ter pelo menos 6 caracteres.',
+    'auth/user-not-found':'Não encontramos essa conta.',
+    'auth/wrong-password':'Senha incorreta.',
+    'auth/invalid-credential':'E-mail ou senha incorretos.',
+    'auth/too-many-requests':'Muitas tentativas. Aguarde um pouco.'
+  };
+  return map[code] || 'Algo deu errado. Tente novamente.';
+}
+
+function doLogout(){
+  if(firebaseReady) auth.signOut();
+  showView('landingView');
+}
+
+if(firebaseReady){
+  auth.onAuthStateChanged(user=>{
+    currentUser = user;
+    if(user){
+      renderDashboardForUser(user);
+    }
+  });
+}
+
+function renderDashboardForUser(user){
+  currentUser = user;
+  document.getElementById('dashUserName').textContent = user.displayName || 'Sem nome';
+  document.getElementById('dashUserEmail').textContent = user.email;
+  document.getElementById('dashAvatar').textContent = (user.displayName||user.email||'?')[0].toUpperCase();
+  if(pendingTemplatePrompt){
+    const tpl = pendingTemplatePrompt;
+    pendingTemplatePrompt = null;
+    createProject(tpl.name, tpl.prompt);
+    return;
+  }
+  loadProjects();
+  showView('dashboardView');
+}
+
+/* =================================================================
+   PROJETOS (Firestore)
+================================================================= */
+function loadProjects(){
+  if(!firebaseReady || !currentUser) return;
+  db.collection('projects').where('userId','==',currentUser.uid).get()
+    .then(snap=>{
+      const grid = document.getElementById('projectsGrid');
+      grid.innerHTML = '<div class="new-project-card" onclick="createProject()"><div class="plus">+</div><span>Novo projeto</span></div>';
+      if(snap.empty) return;
+      // ordena no cliente por updatedAt desc (evita exigir índice composto no Firestore)
+      const docs = snap.docs.slice().sort((a,b)=>{
+        const ta = a.data().updatedAt?.toMillis ? a.data().updatedAt.toMillis() : 0;
+        const tb = b.data().updatedAt?.toMillis ? b.data().updatedAt.toMillis() : 0;
+        return tb - ta;
+      });
+      docs.forEach(doc=>{
+        const p = doc.data();
+        const card = document.createElement('div');
+        card.className = 'project-card';
+        card.innerHTML = `
+          <div class="project-thumb">{ }</div>
+          <div class="project-info"><h4>${escapeHtml(p.name||'Sem nome')}</h4><span>atualizado recentemente</span></div>`;
+        card.onclick = ()=>openProject(doc.id, p);
+        grid.appendChild(card);
+      });
+    })
+    .catch(err=>{
+      console.error('Erro ao carregar projetos:', err);
+      alert('Não foi possível carregar seus projetos.\n\nMotivo: ' + err.message);
+    });
+}
+
+function createProject(initialName, initialPrompt){
+  const name = initialName || 'Novo projeto';
+  if(!firebaseReady || !currentUser){
+    // fallback sem firebase: abre builder local, sem persistência
+    currentProjectId = null;
+    currentProjectCode = '';
+    chatHistory = [];
+    document.getElementById('builderTitle').value = name;
+    resetBuilderUI();
+    showBuilder();
+    if(initialPrompt) sendChatMessage(initialPrompt);
+    return;
+  }
+  db.collection('projects').add({
+    userId: currentUser.uid,
+    name: name,
+    code: '',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(ref=>{
+    openProject(ref.id, {name:name, code:''});
+    if(initialPrompt) sendChatMessage(initialPrompt);
+  }).catch(err=>{
+    console.error('Erro ao criar projeto:', err);
+    alert('Não foi possível criar o projeto.\n\nMotivo: ' + err.message + '\n\nSe o erro mencionar "permissão" ou "permission-denied", revise as regras do Firestore no Console do Firebase.');
+  });
+}
+
+function openProject(id, data){
+  currentProjectId = id;
+  currentProjectCode = data.code || '';
+  chatHistory = data.chatHistory || [];
+  document.getElementById('builderTitle').value = data.name || 'Novo projeto';
+  resetBuilderUI();
+  chatHistory.forEach(m=>renderMessage(m.role, m.content, false));
+  if(currentProjectCode){ renderPreview(currentProjectCode); }
+  showBuilder();
+}
+
+function resetBuilderUI(){
+  document.getElementById('chatMessages').innerHTML = '';
+  document.getElementById('previewFrame').style.display = 'none';
+  document.getElementById('previewEmpty').style.display = 'flex';
+  document.getElementById('codeView').textContent = '';
+  switchPreviewTab('preview');
+}
+
+function renameProject(newName){
+  document.getElementById('builderTitle').value = newName || 'Projeto sem nome';
+  if(firebaseReady && currentProjectId){
+    db.collection('projects').doc(currentProjectId).update({
+      name:newName, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
+}
+
+function saveProjectState(){
+  if(!firebaseReady || !currentProjectId) return;
+  document.getElementById('builderStatus').innerHTML = '<span>●</span> salvando…';
+  db.collection('projects').doc(currentProjectId).update({
+    code: currentProjectCode,
+    chatHistory: chatHistory,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(()=>{
+    document.getElementById('builderStatus').innerHTML = '<span>●</span> salvo';
+  }).catch(()=>{
+    document.getElementById('builderStatus').innerHTML = '<span>●</span> erro ao salvar';
+  });
+}
+
+function backToDashboard(){
+  const titleInput = document.getElementById('builderTitle');
+  if(titleInput && currentProjectId){
+    renameProject(titleInput.value.trim() || 'Projeto sem nome');
+  }
+  showView('dashboardView');
+  loadProjects();
+}
+
+function showBuilder(){
+  document.querySelectorAll('.app-view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.builder-view').forEach(v=>v.classList.add('active'));
+  document.getElementById('apiKeyInput').value = geminiApiKey ? '••••••••••••' : '';
+  document.getElementById('apiKeyBanner').style.display = geminiApiKey ? 'none' : 'flex';
+}
+
+/* override showView para também esconder o builder quando necessário */
+const _origShowView = showView;
+showView = function(id){
+  document.querySelectorAll('.builder-view').forEach(v=>v.classList.remove('active'));
+  _origShowView(id);
+};
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+/* =================================================================
+   CHAVE DE API
+================================================================= */
+function saveApiKey(){
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if(!val || val.includes('•')) return;
+  geminiApiKey = val;
+  localStorage.setItem('forja_gemini_key', val);
+  document.getElementById('apiKeyBanner').style.display = 'none';
+}
+
+/* =================================================================
+   CHAT + GERAÇÃO DE CÓDIGO
+================================================================= */
+function handleChatKeydown(e){
+  if(e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    sendChatMessage();
+  }
+}
+
+function handleImageAttach(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')){
+    alert('Por favor, selecione um arquivo de imagem (captura de tela, foto, etc).');
+    return;
+  }
+  if(file.size > 4 * 1024 * 1024){
+    alert('Imagem muito grande. Use uma imagem de até 4MB.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    const base64 = reader.result.split(',')[1];
+    pendingAttachment = { base64, mimeType: file.type, name: file.name };
+    renderAttachPreview();
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+function renderAttachPreview(){
+  const el = document.getElementById('attachPreview');
+  if(!pendingAttachment){
+    el.classList.remove('active');
+    el.innerHTML = '';
+    return;
+  }
+  el.classList.add('active');
+  el.innerHTML = `
+    <img src="data:${pendingAttachment.mimeType};base64,${pendingAttachment.base64}" alt="anexo">
+    <span>${escapeHtml(pendingAttachment.name)}</span>
+    <button onclick="removeAttachment()">✕ remover</button>`;
+}
+
+function removeAttachment(){
+  pendingAttachment = null;
+  renderAttachPreview();
+}
+
+function renderMessage(role, content, animate=true, attachment=null){
+  const wrap = document.getElementById('chatMessages');
+  const msg = document.createElement('div');
+  msg.className = 'msg ' + role;
+  const roleLabel = role === 'user' ? 'VOCÊ' : 'FORJA AI';
+  const imgHtml = attachment ? `<img class="attached-thumb" src="data:${attachment.mimeType};base64,${attachment.base64}" alt="anexo">` : '';
+  msg.innerHTML = `<div class="msg-role ${role==='ai'?'ai':''}">${roleLabel}</div><div class="msg-bubble">${imgHtml}</div>`;
+  const bubble = msg.querySelector('.msg-bubble');
+  const textNode = document.createTextNode(content);
+  bubble.appendChild(textNode);
+  wrap.appendChild(msg);
+  wrap.scrollTop = wrap.scrollHeight;
+  return msg;
+}
+
+function renderThinking(){
+  const wrap = document.getElementById('chatMessages');
+  const msg = document.createElement('div');
+  msg.className = 'msg ai';
+  msg.id = 'thinkingMsg';
+  msg.innerHTML = `<div class="msg-role ai">FORJA AI</div>
+    <div class="msg-bubble thinking">Construindo
+      <span class="dot-flash"><span></span><span></span><span></span></span>
+    </div>`;
+  wrap.appendChild(msg);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function removeThinking(){
+  const el = document.getElementById('thinkingMsg');
+  if(el) el.remove();
+}
+
+async function sendChatMessage(forcedText){
+  const input = document.getElementById('chatInput');
+  const text = (typeof forcedText === 'string' ? forcedText : input.value).trim();
+  const attachment = pendingAttachment;
+  if(!text && !attachment) return;
+  if(typeof forcedText !== 'string') input.value = '';
+
+  renderMessage('user', text || '(imagem enviada sem texto)', true, attachment);
+  chatHistory.push({role:'user', content:text || '(imagem enviada sem texto)', hadAttachment: !!attachment});
+
+  pendingAttachment = null;
+  renderAttachPreview();
+
+  if(!geminiApiKey){
+    renderMessage('ai', 'Antes de gerar código de verdade, cole sua chave da API do Gemini na barra acima. Por enquanto, vou só anotar seu pedido.');
+    chatHistory.push({role:'ai', content:'(chave de API não configurada)'});
+    saveProjectState();
+    return;
+  }
+
+  renderThinking();
+
+  try{
+    const systemPrompt = `Você é um gerador de código especializado em criar aplicações web completas em um ÚNICO arquivo HTML (com CSS e JS embutidos), sem dependências de build. Sempre responda APENAS com o código HTML completo, começando com <!DOCTYPE html> e nada mais — sem explicações antes ou depois, sem markdown, sem crases. Se o usuário já tinha um código anterior (fornecido abaixo) e está pedindo uma alteração, edite esse código existente em vez de recomeçar do zero. Se o usuário anexou uma imagem (captura de tela, referência visual, rascunho), use-a como referência visual ou funcional para o que precisa ser construído.
+
+${currentProjectCode ? 'CÓDIGO ATUAL DO PROJETO:\n' + currentProjectCode : 'Não há código ainda — este é o primeiro pedido.'}`;
+
+    const userParts = [];
+    if(text) userParts.push({ text: text });
+    if(attachment) userParts.push({ inlineData: { mimeType: attachment.mimeType, data: attachment.base64 } });
+    if(!text) userParts.push({ text: 'Use esta imagem como referência para construir o app.' });
+
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-goog-api-key': geminiApiKey
+      },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role:'user', parts: userParts }],
+        generationConfig: { maxOutputTokens: 8000 }
+      })
+    });
+
+    if(!response.ok){
+      const errBody = await response.json().catch(()=>({}));
+      throw new Error(errBody?.error?.message || ('Erro HTTP ' + response.status));
+    }
+
+    const data = await response.json();
+    const candidate = data?.candidates?.[0];
+    if(!candidate){
+      throw new Error('A IA não retornou conteúdo (pode ter sido bloqueado por segurança). Tente reformular o pedido.');
+    }
+    const rawText = (candidate.content?.parts || []).map(p=>p.text||'').join('\n').trim();
+    const cleanCode = rawText.replace(/^```html\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+
+    removeThinking();
+    renderMessage('ai', 'Pronto! Atualizei o preview ao lado com as mudanças.');
+    chatHistory.push({role:'ai', content:'Código gerado/atualizado.'});
+
+    currentProjectCode = cleanCode;
+    renderPreview(cleanCode);
+    saveProjectState();
+
+  }catch(err){
+    removeThinking();
+    renderMessage('ai', 'Não consegui gerar o código: ' + err.message + '. Verifique se a chave da API está correta.');
+    chatHistory.push({role:'ai', content:'Erro: ' + err.message});
+  }
+}
+
+function renderPreview(code){
+  document.getElementById('previewEmpty').style.display = 'none';
+  const frame = document.getElementById('previewFrame');
+  frame.style.display = 'block';
+  frame.srcdoc = code;
+  document.getElementById('codeView').textContent = code;
+}
+
+function switchPreviewTab(tab){
+  document.getElementById('tabPreview').classList.toggle('active', tab==='preview');
+  document.getElementById('tabCode').classList.toggle('active', tab==='code');
+  document.getElementById('previewFrameWrap').classList.toggle('active', tab==='preview');
+  document.getElementById('codeView').classList.toggle('active', tab==='code');
+}
+
+function downloadProjectCode(){
+  if(!currentProjectCode){ alert('Ainda não há código gerado neste projeto.'); return; }
+  const blob = new Blob([currentProjectCode], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (document.getElementById('builderTitle').value || 'projeto').replace(/\s+/g,'-').toLowerCase() + '.html';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* =================================================================
+   PUBLICAÇÃO (link público)
+================================================================= */
+function publishProject(){
+  if(!currentProjectCode){ alert('Descreva seu app no chat antes de publicar — ainda não há código gerado.'); return; }
+  if(!firebaseReady){ alert('Configure o Firebase primeiro para poder publicar (veja o aviso no canto da tela).'); return; }
+  if(!currentProjectId){ alert('Salve o projeto antes de publicar.'); return; }
+
+  const badge = document.getElementById('publishedBadge');
+  badge.style.display = 'inline';
+  badge.textContent = 'publicando…';
+
+  const slug = currentProjectId;
+  const name = document.getElementById('builderTitle').value || 'Projeto sem nome';
+
+  db.collection('publicApps').doc(slug).set({
+    name: name,
+    code: currentProjectCode,
+    ownerId: currentUser ? currentUser.uid : null,
+    publishedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(()=>{
+    const publicUrl = window.location.origin + window.location.pathname + '?app=' + slug;
+    badge.textContent = '● publicado';
+    db.collection('projects').doc(currentProjectId).update({
+      publicUrl: publicUrl, publishedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(()=>{});
+    promptCopyLink(publicUrl);
+  }).catch(err=>{
+    badge.textContent = '';
+    badge.style.display = 'none';
+    alert('Não foi possível publicar.\n\nMotivo: ' + err.message + '\n\nPode ser necessário liberar a coleção "publicApps" nas regras do Firestore (leitura pública, escrita autenticada).');
+  });
+}
+
+function promptCopyLink(url){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(()=>{
+      alert('App publicado! Link copiado para a área de transferência:\n\n' + url);
+    }).catch(()=>{
+      alert('App publicado! Aqui está o link:\n\n' + url);
+    });
+  } else {
+    alert('App publicado! Aqui está o link:\n\n' + url);
+  }
+}
+
+/* ---------- visualizar app publicado via ?app=ID (sem necessidade de login) ---------- */
+function checkPublicAppRoute(){
+  const params = new URLSearchParams(window.location.search);
+  const appId = params.get('app');
+  if(!appId) return false;
+  if(!firebaseReady){
+    document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#a9a6b8;font-family:sans-serif;">Configuração do Firebase pendente — não é possível carregar este app publicado.</div>';
+    return true;
+  }
+  document.body.innerHTML = '<div id="publicAppLoading" style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#a9a6b8;font-family:sans-serif;">Carregando app publicado…</div>';
+  db.collection('publicApps').doc(appId).get().then(doc=>{
+    if(!doc.exists){
+      document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#a9a6b8;font-family:sans-serif;">Este app não existe ou foi despublicado.</div>';
+      return;
+    }
+    const data = doc.data();
+    document.title = data.name || 'App publicado';
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:none;';
+    iframe.srcdoc = data.code;
+    document.body.innerHTML = '';
+    document.body.appendChild(iframe);
+  }).catch(()=>{
+    document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#a9a6b8;font-family:sans-serif;">Não foi possível carregar este app.</div>';
+  });
+  return true;
+}
+checkPublicAppRoute();
+</script>
+
+</body>
+</html>
