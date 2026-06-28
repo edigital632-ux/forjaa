@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -1234,14 +1235,19 @@ let selectModeActive = false;
 let selectedTarget = null;
 
 /* =================================================================
-   ✅ CORREÇÃO: Modelos atualizados + endpoint v1beta (suporta Gemini 2.5)
+   ✅ CORREÇÃO (jun/2026): gemini-2.0-flash e gemini-2.0-flash-lite foram
+   DESATIVADOS pelo Google em 01/06/2026 — chamadas a eles retornam erro.
+   Lista atualizada para os modelos atualmente ativos, do mais capaz ao
+   mais leve. gemini-2.5-flash está com desativação anunciada para
+   16/10/2026: quando esse prazo chegar, troque o primeiro item da lista
+   por 'gemini-3.5-flash' (já incluído aqui como segunda opção).
 ================================================================= */
 const GEMINI_MODELS = [
-  'gemini-2.5-flash',       // Principal — mais capaz e atual
-  'gemini-2.0-flash',       // Fallback rápido
-  'gemini-2.0-flash-lite'   // Fallback leve
+  'gemini-2.5-flash',        // Principal — bom equilíbrio custo/capacidade (ativo até 16/10/2026)
+  'gemini-3.5-flash',        // Fallback — mais novo e capaz, sem data de desativação anunciada
+  'gemini-2.5-flash-lite'    // Fallback leve — mais rápido/barato
 ];
-// v1beta é necessário para Gemini 2.5+
+// v1beta é necessário para a família Gemini 2.5+/3.x
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 /* =================================================================
@@ -1922,7 +1928,7 @@ async function callGeminiStreaming(systemPrompt, userParts, onChunk){
             { role: 'model', parts: [{ text: 'Entendido. Vou seguir todas as instruções.' }] },
             { role: 'user', parts: userParts }
           ],
-          generationConfig: { maxOutputTokens: 8192 }
+          generationConfig: { maxOutputTokens: 32768 }
         })
       });
 
@@ -1940,6 +1946,7 @@ async function callGeminiStreaming(systemPrompt, userParts, onChunk){
       const decoder = new TextDecoder();
       let fullText = '';
       let buffer = '';
+      let finishReason = null;
 
       while(true){
         const { done, value } = await reader.read();
@@ -1954,7 +1961,9 @@ async function callGeminiStreaming(systemPrompt, userParts, onChunk){
           if(jsonStr === '[DONE]') break;
           try{
             const parsed = JSON.parse(jsonStr);
-            const chunk = (parsed?.candidates?.[0]?.content?.parts || [])
+            const cand = parsed?.candidates?.[0];
+            if(cand?.finishReason) finishReason = cand.finishReason;
+            const chunk = (cand?.content?.parts || [])
               .map(p => p.text || '').join('');
             if(chunk){
               fullText += chunk;
@@ -1966,6 +1975,9 @@ async function callGeminiStreaming(systemPrompt, userParts, onChunk){
 
       if(!fullText){
         throw new Error('A IA não retornou conteúdo. Tente reformular o pedido.');
+      }
+      if(finishReason === 'MAX_TOKENS'){
+        throw new Error('A resposta da IA foi cortada por ultrapassar o limite de tamanho antes de terminar o código. Tente pedir algo um pouco mais específico, ou divida o pedido em partes menores.');
       }
       return fullText.trim();
 
