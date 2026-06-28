@@ -170,7 +170,7 @@ input,textarea{font-family:inherit;color:inherit;background:none;border:none;out
 }
 .hero-sub b{color:var(--text);font-weight:600;}
 
-/* prompt box - signature element */
+/* prompt box */
 .prompt-box{
   margin-top:46px;width:100%;max-width:680px;
   background:var(--surface);border:1px solid var(--border);border-radius:18px;
@@ -250,7 +250,7 @@ input,textarea{font-family:inherit;color:inherit;background:none;border:none;out
 }
 @media (max-width:860px){.steps{grid-template-columns:1fr;}}
 
-/* ============ FEATURE ROW (novo: paridade Lovable/v0) ============ */
+/* ============ FEATURE ROW ============ */
 .feature-row{
   display:grid;grid-template-columns:repeat(3,1fr);gap:18px;max-width:1100px;margin:0 auto;
 }
@@ -339,7 +339,7 @@ footer{
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease;}
 .reveal.in{opacity:1;transform:translateY(0);}
 
-/* ============ APP SHELL (auth/dashboard) ============ */
+/* ============ APP SHELL ============ */
 .app-view{display:none;min-height:100vh;position:relative;z-index:2;}
 .app-view.active{display:block;}
 #landingView.hidden{display:none;}
@@ -485,7 +485,7 @@ footer{
 .empty-state h3{font-family:var(--font-display);font-size:22px;color:var(--text);margin-bottom:8px;}
 .empty-state p{font-size:14.5px;margin-bottom:24px;}
 
-/* ============ BUILDER (chat + preview + inspector) ============ */
+/* ============ BUILDER ============ */
 .builder-view{display:none;height:100vh;flex-direction:column;position:relative;z-index:5;background:var(--bg-deep);}
 .builder-view.active{display:flex;}
 .builder-topbar{
@@ -511,7 +511,7 @@ footer{
 .builder-status .dot-error{color:var(--danger);}
 .builder-main{flex:1;display:flex;overflow:hidden;}
 
-/* version history dropdown */
+/* version history */
 .version-wrap{position:relative;}
 .version-menu{
   position:absolute;top:calc(100% + 8px);right:0;width:280px;max-height:360px;overflow-y:auto;
@@ -1119,8 +1119,6 @@ function showAuth(mode){
 <script>
 /* =================================================================
    CONFIGURAÇÃO DO FIREBASE
-   Substitua os valores abaixo pelos do seu projeto Firebase.
-   Console > Configurações do projeto > Seus apps > SDK config
 ================================================================= */
 const firebaseConfig = {
   apiKey: "AIzaSyCwu9-ixCL2JjsfVZQmmQfCedcOR5IQhKY",
@@ -1159,24 +1157,28 @@ let currentProjectId = null;
 let currentProjectCode = '';
 let chatHistory = [];
 let geminiApiKey = localStorage.getItem('forja_gemini_key') || '';
-let pendingAttachment = null; // { base64, mimeType, name }
-let pendingTemplatePrompt = null; // { name, prompt } aguardando login/cadastro para iniciar
+let pendingAttachment = null;
+let pendingTemplatePrompt = null;
 
-/* histórico de versões (por projeto, mantido em memória + persistido no Firestore) */
-let versionHistory = []; // [{code, description, timestamp}], mais recente no início
-let currentVersionIndex = 0; // índice da versão atualmente exibida (0 = mais recente)
+/* histórico de versões */
+let versionHistory = [];
+let currentVersionIndex = 0;
 const MAX_VERSIONS = 30;
 
 /* seleção visual de elemento */
 let selectModeActive = false;
-let selectedTarget = null; // { selectorHint, tag, text, html }
+let selectedTarget = null;
 
 /* =================================================================
-   MODELOS DE IA — ORDEM DE FALLBACK
-   Tenta o primeiro; se vier "sobrecarregado"/indisponível, tenta o próximo.
-   Isso resolve o erro de "alta demanda" sem depender de um único modelo.
+   MODELOS DE IA — CORRIGIDO: usa API v1 e modelos atuais
 ================================================================= */
-const GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
+const GEMINI_MODELS = [
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-1.5-flash-latest'
+];
+// URL corrigida: v1 em vez de v1beta
+const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1/models';
 
 /* =================================================================
    AUTENTICAÇÃO
@@ -1262,7 +1264,6 @@ function loadProjects(){
       const grid = document.getElementById('projectsGrid');
       grid.innerHTML = '<div class="new-project-card" onclick="createProject()"><div class="plus">+</div><span>Novo projeto</span></div>';
       if(snap.empty) return;
-      // ordena no cliente por updatedAt desc (evita exigir índice composto no Firestore)
       const docs = snap.docs.slice().sort((a,b)=>{
         const ta = a.data().updatedAt?.toMillis ? a.data().updatedAt.toMillis() : 0;
         const tb = b.data().updatedAt?.toMillis ? b.data().updatedAt.toMillis() : 0;
@@ -1302,8 +1303,6 @@ function deleteProject(id, name){
 function createProject(initialName, initialPrompt){
   const name = initialName || 'Novo projeto';
   if(!firebaseReady || !currentUser){
-    // fallback sem firebase: abre builder local, sem persistência do PRÓPRIO Forja —
-    // mas ainda gera um ID estável para a coleção Firestore que o APP GERADO vai usar
     currentProjectId = 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
     currentProjectCode = '';
     chatHistory = [];
@@ -1397,7 +1396,6 @@ function showBuilder(){
   document.getElementById('apiKeyBanner').style.display = geminiApiKey ? 'none' : 'flex';
 }
 
-/* override showView para também esconder o builder quando necessário */
 const _origShowView = showView;
 showView = function(id){
   document.querySelectorAll('.builder-view').forEach(v=>v.classList.remove('active'));
@@ -1493,7 +1491,7 @@ function restoreVersion(index){
 }
 
 /* =================================================================
-   SELEÇÃO VISUAL DE ELEMENTO (clique no preview para editar)
+   SELEÇÃO VISUAL DE ELEMENTO
 ================================================================= */
 function toggleSelectMode(){ setSelectMode(!selectModeActive); }
 
@@ -1504,7 +1502,7 @@ function setSelectMode(on){
   document.getElementById('previewFrameWrap').classList.toggle('selecting', on);
   const frame = document.getElementById('previewFrame');
   if(frame.contentWindow){
-    try{ injectOrRemoveSelectListener(on); }catch(e){ /* cross-frame restrictions com srcdoc não se aplicam aqui */ }
+    try{ injectOrRemoveSelectListener(on); }catch(e){}
   }
 }
 
@@ -1550,8 +1548,6 @@ function handleIframeClick(e){
   const text = (el.textContent||'').trim().slice(0,60);
   const classAttr = el.className && typeof el.className === 'string' ? el.className.trim() : '';
   const idAttr = el.id || '';
-  // remove o outline temporário de hover antes de capturar o snippet,
-  // para não "contaminar" o HTML de referência enviado à IA
   const prevOutline = el.style.outline, prevOutlineOffset = el.style.outlineOffset;
   el.style.outline = ''; el.style.outlineOffset = '';
   let outerSnippet = '';
@@ -1599,7 +1595,7 @@ function handleImageAttach(e){
   const file = e.target.files[0];
   if(!file) return;
   if(!file.type.startsWith('image/')){
-    alert('Por favor, selecione um arquivo de imagem (captura de tela, foto, etc).');
+    alert('Por favor, selecione um arquivo de imagem.');
     return;
   }
   if(file.size > 4 * 1024 * 1024){
@@ -1676,23 +1672,26 @@ function removeThinking(){
   if(el) el.remove();
 }
 
-/* chama a API do Gemini, tentando modelos da lista de fallback em sequência
-   até um responder (resolve o erro de "alta demanda" / modelo sobrecarregado) */
+/* =================================================================
+   CHAMADA À API DO GEMINI — CORRIGIDA
+   - Usa GEMINI_API_BASE (v1 em vez de v1beta)
+   - Modelos atualizados: gemini-2.0-flash, gemini-2.0-flash-lite, gemini-1.5-flash-latest
+================================================================= */
 async function callGeminiWithFallback(systemPrompt, userParts){
   let lastError = null;
-  for(let i=0; i<GEMINI_MODELS.length; i++){
+  for(let i = 0; i < GEMINI_MODELS.length; i++){
     const model = GEMINI_MODELS[i];
-    if(i>0) updateThinking(`Tentando modelo alternativo (${i+1}/${GEMINI_MODELS.length})…`);
+    if(i > 0) updateThinking(`Tentando modelo alternativo (${i+1}/${GEMINI_MODELS.length})…`);
     try{
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-        method:'POST',
-        headers:{
-          'Content-Type':'application/json',
+      const response = await fetch(`${GEMINI_API_BASE}/${model}:generateContent`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
           'x-goog-api-key': geminiApiKey
         },
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ role:'user', parts: userParts }],
+          contents: [{ role: 'user', parts: userParts }],
           generationConfig: { maxOutputTokens: 8000 }
         })
       });
@@ -1702,7 +1701,7 @@ async function callGeminiWithFallback(systemPrompt, userParts){
         const msg = errBody?.error?.message || ('Erro HTTP ' + response.status);
         const overloaded = response.status === 503 || response.status === 429 || /overloaded|high demand|quota/i.test(msg);
         lastError = new Error(msg);
-        if(overloaded && i < GEMINI_MODELS.length-1) continue; // tenta o próximo modelo
+        if(overloaded && i < GEMINI_MODELS.length - 1) continue;
         throw lastError;
       }
 
@@ -1711,12 +1710,12 @@ async function callGeminiWithFallback(systemPrompt, userParts){
       if(!candidate){
         throw new Error('A IA não retornou conteúdo (pode ter sido bloqueado por segurança). Tente reformular o pedido.');
       }
-      return (candidate.content?.parts || []).map(p=>p.text||'').join('\n').trim();
+      return (candidate.content?.parts || []).map(p => p.text || '').join('\n').trim();
 
-    }catch(err){
+    } catch(err){
       lastError = err;
       const overloaded = /overloaded|high demand|quota|503|429/i.test(err.message);
-      if(overloaded && i < GEMINI_MODELS.length-1) continue;
+      if(overloaded && i < GEMINI_MODELS.length - 1) continue;
       throw lastError;
     }
   }
@@ -1767,29 +1766,26 @@ REGRA MAIS IMPORTANTE — PERSISTÊNCIA DE DADOS COM FIREBASE:
 O app que você gerar será publicado como um link público e usado por pessoas reais, em dispositivos diferentes, em momentos diferentes. Por isso, qualquer dado que o app crie, edite ou liste (clientes, tarefas, transações, mensagens, produtos, hábitos, posts, o que for) NÃO PODE viver só em variável JavaScript — precisa ser salvo no Firebase Firestore, ou os dados desaparecem ao recarregar a página e o app fica inútil para o usuário final.
 
 Sempre que o app tiver qualquer tipo de dado para guardar, inclua no <head> ou antes do </body>:
-\`\`\`
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></scr` + `ipt>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></scr` + `ipt>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></scr` + `ipt>
-\`\`\`
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"><\/script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"><\/script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"><\/script>
+
 E inicialize com EXATAMENTE esta config (não troque nenhum valor):
-\`\`\`js
 const firebaseConfig = ${JSON.stringify(firebaseConfig)};
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 const APP_COLLECTION = "${appCollectionId}";
-\`\`\`
 
 Regras de uso obrigatórias:
-1. SEMPRE implemente um login simples por e-mail/senha (firebase.auth().createUserWithEmailAndPassword / signInWithEmailAndPassword) antes de o usuário poder usar o app — uma telinha de entrar/criar conta, mesmo que simples. Use auth.onAuthStateChanged para saber se o usuário está logado e mostrar a tela certa.
-2. TODOS os dados do app (tarefas, clientes, registros, itens, mensagens, etc.) devem ser salvos em: db.collection(APP_COLLECTION).doc(auth.currentUser.uid).collection('items') — ou subcoleções nomeadas de forma clara dentro desse mesmo caminho. Isso garante que cada usuário só vê e edita os próprios dados, mesmo todos usando o mesmo app publicado.
-3. Use onSnapshot (escuta em tempo real) para listas, sempre que possível, em vez de um único get() — assim a tela atualiza sozinha quando o dado muda.
-4. Trate erros do Firebase (rede, permissão, etc.) mostrando uma mensagem amigável na tela, nunca deixe a tela em branco ou travada num "carregando".
-5. Se o pedido do usuário for puramente visual (uma landing page sem dados para salvar, por exemplo), o Firebase pode ser omitido — use-o apenas quando o app realmente precisa lembrar de algo entre sessões.
-6. NUNCA invente outro firebaseConfig nem troque o nome do banco — use sempre exatamente o bloco acima.
+1. SEMPRE implemente um login simples por e-mail/senha antes de o usuário poder usar o app.
+2. TODOS os dados do app devem ser salvos em: db.collection(APP_COLLECTION).doc(auth.currentUser.uid).collection('items').
+3. Use onSnapshot (escuta em tempo real) para listas sempre que possível.
+4. Trate erros do Firebase mostrando uma mensagem amigável na tela.
+5. Se o pedido for puramente visual (landing page sem dados), o Firebase pode ser omitido.
+6. NUNCA invente outro firebaseConfig — use sempre exatamente o bloco acima.
 
-Se o usuário já tinha um código anterior (fornecido abaixo) e está pedindo uma alteração, edite esse código existente em vez de recomeçar do zero, preservando tudo que não foi pedido para mudar — incluindo a configuração do Firebase e a lógica de login/dados já implementada. Se o usuário anexou uma imagem (captura de tela, referência visual, rascunho), use-a como referência visual ou funcional para o que precisa ser construído.${targetContext}
+Se o usuário já tinha um código anterior (fornecido abaixo) e está pedindo uma alteração, edite esse código existente em vez de recomeçar do zero.${targetContext}
 
 ${currentProjectCode ? 'CÓDIGO ATUAL DO PROJETO:\n' + currentProjectCode : 'Não há código ainda — este é o primeiro pedido.'}`;
 
@@ -1815,7 +1811,7 @@ ${currentProjectCode ? 'CÓDIGO ATUAL DO PROJETO:\n' + currentProjectCode : 'Nã
 
     saveProjectState();
 
-  }catch(err){
+  } catch(err){
     removeThinking();
     renderMessage('ai', 'Não consegui gerar o código: ' + err.message + '. Verifique se a chave da API está correta, ou tente novamente em alguns segundos.', true, null, null);
     document.querySelector('#chatMessages .msg:last-child .msg-bubble').classList.add('error');
@@ -1854,11 +1850,11 @@ function downloadProjectCode(){
 }
 
 /* =================================================================
-   PUBLICAÇÃO (link público)
+   PUBLICAÇÃO
 ================================================================= */
 function publishProject(){
   if(!currentProjectCode){ alert('Descreva seu app no chat antes de publicar — ainda não há código gerado.'); return; }
-  if(!firebaseReady){ alert('Configure o Firebase primeiro para poder publicar (veja o aviso no canto da tela).'); return; }
+  if(!firebaseReady){ alert('Configure o Firebase primeiro para poder publicar.'); return; }
   if(!currentProjectId){ alert('Salve o projeto antes de publicar.'); return; }
 
   const badge = document.getElementById('publishedBadge');
@@ -1883,7 +1879,7 @@ function publishProject(){
   }).catch(err=>{
     badge.textContent = '';
     badge.style.display = 'none';
-    alert('Não foi possível publicar.\n\nMotivo: ' + err.message + '\n\nPode ser necessário liberar a coleção "publicApps" nas regras do Firestore (leitura pública, escrita autenticada).');
+    alert('Não foi possível publicar.\n\nMotivo: ' + err.message);
   });
 }
 
@@ -1899,7 +1895,7 @@ function promptCopyLink(url){
   }
 }
 
-/* ---------- visualizar app publicado via ?app=ID (sem necessidade de login) ---------- */
+/* ---------- visualizar app publicado via ?app=ID ---------- */
 function checkPublicAppRoute(){
   const params = new URLSearchParams(window.location.search);
   const appId = params.get('app');
