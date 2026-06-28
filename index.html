@@ -1690,8 +1690,11 @@ async function callGeminiWithFallback(systemPrompt, userParts){
           'x-goog-api-key': geminiApiKey
         },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ role: 'user', parts: userParts }],
+          contents: [
+            { role: 'user', parts: [{ text: systemPrompt }] },
+            { role: 'model', parts: [{ text: 'Entendido. Vou seguir todas as instruções.' }] },
+            { role: 'user', parts: userParts }
+          ],
           generationConfig: { maxOutputTokens: 8000 }
         })
       });
