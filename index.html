@@ -14,13 +14,20 @@
   --bg-deep: #0a0a0f;
   --surface: #1b1a24;
   --surface-2: #232230;
+  --surface-3: #2a283a;
   --border: #2e2c3c;
+  --border-soft: #232230;
   --text: #f2efe9;
   --text-dim: #a9a6b8;
   --text-faint: #6f6c80;
   --accent: #ff7a45;
   --accent-dim: #c75a30;
+  --accent-soft: rgba(255,122,69,0.12);
+  --violet: #8b7cf6;
+  --violet-dim: #6b5cd6;
+  --violet-soft: rgba(139,124,246,0.14);
   --code-green: #7fe7a3;
+  --danger: #ff6b6b;
   --radius: 14px;
   --radius-sm: 8px;
   --font-display: 'Fraunces', serif;
@@ -51,12 +58,17 @@ input,textarea{font-family:inherit;color:inherit;background:none;border:none;out
 
 .container{max-width:1180px;margin:0 auto;padding:0 28px;}
 
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px;}
+::-webkit-scrollbar-thumb:hover{background:var(--surface-3);}
+
 /* ============ BACKGROUND TEXTURE ============ */
 .grain-bg{
   position:fixed;inset:0;z-index:0;pointer-events:none;
   background:
     radial-gradient(ellipse 800px 500px at 15% -10%, rgba(255,122,69,0.10), transparent 60%),
-    radial-gradient(ellipse 700px 600px at 100% 20%, rgba(127,231,163,0.05), transparent 55%),
+    radial-gradient(ellipse 700px 600px at 100% 20%, rgba(139,124,246,0.06), transparent 55%),
     var(--bg);
 }
 .grain-bg::after{
@@ -98,16 +110,22 @@ input,textarea{font-family:inherit;color:inherit;background:none;border:none;out
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
   padding:10px 19px;border-radius:9px;font-size:14.5px;font-weight:600;
-  transition:transform .15s, box-shadow .15s, background .15s;
+  transition:transform .15s, box-shadow .15s, background .15s, opacity .15s;
   white-space:nowrap;
 }
+.btn:disabled{opacity:0.5;cursor:not-allowed;}
 .btn-primary{
   background:var(--accent);color:#1a0f08;
   box-shadow:0 1px 0 rgba(255,255,255,0.15) inset, 0 6px 18px -8px rgba(255,122,69,0.6);
 }
-.btn-primary:hover{transform:translateY(-1px);box-shadow:0 1px 0 rgba(255,255,255,0.2) inset, 0 10px 22px -8px rgba(255,122,69,0.75);}
+.btn-primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 1px 0 rgba(255,255,255,0.2) inset, 0 10px 22px -8px rgba(255,122,69,0.75);}
 .btn-ghost{background:var(--surface);border:1px solid var(--border);color:var(--text);}
-.btn-ghost:hover{background:var(--surface-2);}
+.btn-ghost:hover:not(:disabled){background:var(--surface-2);}
+.btn-violet{background:var(--violet);color:#0f0c24;box-shadow:0 1px 0 rgba(255,255,255,0.15) inset, 0 6px 18px -8px rgba(139,124,246,0.55);}
+.btn-violet:hover:not(:disabled){transform:translateY(-1px);}
+.btn-icon{width:34px;height:34px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--border);flex-shrink:0;padding:0;}
+.btn-icon:hover:not(:disabled){background:var(--surface-2);}
+.btn-icon.active{background:var(--violet-soft);border-color:var(--violet-dim);color:var(--violet);}
 .btn-sm{padding:7px 14px;font-size:13.5px;}
 
 @media (max-width:860px){
@@ -152,7 +170,7 @@ input,textarea{font-family:inherit;color:inherit;background:none;border:none;out
 }
 .hero-sub b{color:var(--text);font-weight:600;}
 
-/* prompt box */
+/* prompt box - signature element */
 .prompt-box{
   margin-top:46px;width:100%;max-width:680px;
   background:var(--surface);border:1px solid var(--border);border-radius:18px;
@@ -183,6 +201,7 @@ input,textarea{font-family:inherit;color:inherit;background:none;border:none;out
 .prompt-box-footer{
   display:flex;align-items:center;justify-content:space-between;
   padding:12px 16px;border-top:1px solid var(--border);background:rgba(255,255,255,0.015);
+  flex-wrap:wrap;gap:10px;
 }
 .prompt-suggestions{display:flex;gap:7px;flex-wrap:wrap;}
 .chip{
@@ -230,6 +249,22 @@ input,textarea{font-family:inherit;color:inherit;background:none;border:none;out
   position:relative;
 }
 @media (max-width:860px){.steps{grid-template-columns:1fr;}}
+
+/* ============ FEATURE ROW (novo: paridade Lovable/v0) ============ */
+.feature-row{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:18px;max-width:1100px;margin:0 auto;
+}
+.feature-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:24px;
+}
+.feature-card .feature-icon{
+  width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:17px;margin-bottom:16px;
+}
+.feature-card h4{font-size:15.5px;font-weight:600;margin-bottom:7px;}
+.feature-card p{font-size:13.5px;color:var(--text-dim);line-height:1.55;}
+@media (max-width:860px){.feature-row{grid-template-columns:1fr;}}
 
 /* ============ TEMPLATES ============ */
 .templates-grid{
@@ -304,7 +339,7 @@ footer{
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease;}
 .reveal.in{opacity:1;transform:translateY(0);}
 
-/* ============ APP SHELL ============ */
+/* ============ APP SHELL (auth/dashboard) ============ */
 .app-view{display:none;min-height:100vh;position:relative;z-index:2;}
 .app-view.active{display:block;}
 #landingView.hidden{display:none;}
@@ -345,7 +380,29 @@ footer{
 }
 .auth-back:hover{color:var(--text);}
 
-/* config notice */
+/* rules modal */
+.rules-modal-overlay{
+  position:fixed;inset:0;z-index:300;background:rgba(8,8,12,0.7);backdrop-filter:blur(4px);
+  display:none;align-items:center;justify-content:center;padding:24px;
+}
+.rules-modal-overlay.open{display:flex;}
+.rules-modal{
+  width:100%;max-width:620px;max-height:80vh;overflow-y:auto;
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:24px;box-shadow:0 40px 80px -30px rgba(0,0,0,0.7);
+}
+.rules-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.rules-modal-head h3{font-family:var(--font-display);font-size:19px;font-weight:600;}
+.rules-modal-head button{color:var(--text-faint);font-size:18px;}
+.rules-modal-head button:hover{color:var(--text);}
+.rules-modal-sub{font-size:13.5px;color:var(--text-dim);line-height:1.55;margin-bottom:16px;}
+.rules-modal-sub code{font-family:var(--font-mono);background:var(--bg-deep);padding:2px 6px;border-radius:5px;font-size:12.5px;}
+.rules-modal pre{
+  background:var(--bg-deep);border:1px solid var(--border);border-radius:10px;
+  padding:16px;font-family:var(--font-mono);font-size:12px;line-height:1.6;color:#d8d5e6;
+  overflow-x:auto;margin-bottom:16px;white-space:pre-wrap;word-break:break-word;
+}
+
 .config-notice{
   position:fixed;bottom:18px;right:18px;z-index:200;max-width:340px;
   background:var(--surface);border:1px solid var(--accent-dim);border-radius:12px;
@@ -389,16 +446,27 @@ footer{
 
 .project-card{
   background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
-  overflow:hidden;cursor:pointer;transition:border-color .2s, transform .2s;
+  overflow:hidden;cursor:pointer;transition:border-color .2s, transform .2s;position:relative;
 }
 .project-card:hover{border-color:var(--accent-dim);transform:translateY(-2px);}
 .project-thumb{
   height:120px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;
-  font-family:var(--font-mono);font-size:24px;color:var(--text-faint);
+  font-family:var(--font-mono);font-size:24px;color:var(--text-faint);position:relative;overflow:hidden;
 }
-.project-info{padding:16px 18px;}
+.project-thumb iframe{width:200%;height:200%;border:none;transform:scale(0.5);transform-origin:top left;pointer-events:none;}
+.project-info{padding:16px 18px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
 .project-info h4{font-size:15px;font-weight:600;margin-bottom:4px;}
 .project-info span{font-size:12.5px;color:var(--text-faint);font-family:var(--font-mono);}
+.project-delete{
+  flex-shrink:0;width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;
+  color:var(--text-faint);font-size:14px;
+}
+.project-delete:hover{background:rgba(255,107,107,0.12);color:var(--danger);}
+.project-published-tag{
+  position:absolute;top:10px;right:10px;font-family:var(--font-mono);font-size:10.5px;
+  background:rgba(127,231,163,0.14);color:var(--code-green);padding:3px 8px;border-radius:99px;
+  border:1px solid rgba(127,231,163,0.3);
+}
 
 .new-project-card{
   border:1.5px dashed var(--border);border-radius:var(--radius);
@@ -417,31 +485,61 @@ footer{
 .empty-state h3{font-family:var(--font-display);font-size:22px;color:var(--text);margin-bottom:8px;}
 .empty-state p{font-size:14.5px;margin-bottom:24px;}
 
-/* ============ BUILDER ============ */
+/* ============ BUILDER (chat + preview + inspector) ============ */
 .builder-view{display:none;height:100vh;flex-direction:column;position:relative;z-index:5;background:var(--bg-deep);}
 .builder-view.active{display:flex;}
 .builder-topbar{
   display:flex;align-items:center;justify-content:space-between;
   padding:12px 20px;border-bottom:1px solid var(--border);background:var(--bg-deep);
-  flex-shrink:0;
+  flex-shrink:0;gap:14px;flex-wrap:wrap;
 }
-.builder-topbar-left{display:flex;align-items:center;gap:14px;}
-.builder-back{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text-dim);}
+.builder-topbar-left{display:flex;align-items:center;gap:14px;min-width:0;}
+.builder-back{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text-dim);flex-shrink:0;}
 .builder-back:hover{color:var(--text);}
 .builder-title{
   font-size:14px;font-weight:600;background:none;border:none;color:var(--text);
-  padding:5px 9px;border-radius:6px;max-width:240px;
+  padding:5px 9px;border-radius:6px;max-width:240px;min-width:0;
 }
 .builder-title:hover, .builder-title:focus{background:var(--surface);}
+.builder-topbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
 .builder-status{
   font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint);
-  display:flex;align-items:center;gap:6px;
+  display:flex;align-items:center;gap:6px;white-space:nowrap;
 }
+.builder-status .dot-saved{color:var(--code-green);}
+.builder-status .dot-saving{color:var(--accent);}
+.builder-status .dot-error{color:var(--danger);}
 .builder-main{flex:1;display:flex;overflow:hidden;}
+
+/* version history dropdown */
+.version-wrap{position:relative;}
+.version-menu{
+  position:absolute;top:calc(100% + 8px);right:0;width:280px;max-height:360px;overflow-y:auto;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  box-shadow:0 24px 50px -20px rgba(0,0,0,0.7);z-index:80;display:none;padding:6px;
+}
+.version-menu.open{display:block;}
+.version-menu-head{
+  font-family:var(--font-mono);font-size:11px;color:var(--text-faint);padding:10px 10px 8px;
+  letter-spacing:0.04em;
+}
+.version-item{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13px;
+}
+.version-item:hover{background:var(--surface-2);}
+.version-item.current{background:var(--accent-soft);}
+.version-item .v-label{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.version-item .v-time{font-size:11px;color:var(--text-faint);font-family:var(--font-mono);}
+.version-item .v-desc{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;}
+.version-item .v-badge{
+  font-family:var(--font-mono);font-size:10px;color:var(--accent);flex-shrink:0;
+  background:var(--accent-soft);padding:2px 6px;border-radius:99px;
+}
 
 /* chat pane */
 .chat-pane{
-  width:400px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--border);
+  width:380px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--border);
   background:var(--bg);
 }
 .chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;}
@@ -454,8 +552,15 @@ footer{
 .msg-bubble{
   font-size:14px;line-height:1.55;color:var(--text);
   background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;
+  white-space:pre-wrap;
 }
 .msg.user .msg-bubble{background:var(--surface-2);}
+.msg-bubble.error{border-color:rgba(255,107,107,0.35);background:rgba(255,107,107,0.06);}
+.msg-target-tag{
+  display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:11px;
+  color:var(--violet);background:var(--violet-soft);padding:4px 8px;border-radius:7px;margin-bottom:8px;
+  border:1px solid rgba(139,124,246,0.25);
+}
 .msg-bubble pre{
   background:var(--bg-deep);border-radius:8px;padding:10px 12px;overflow-x:auto;
   font-family:var(--font-mono);font-size:12px;margin-top:8px;border:1px solid var(--border);
@@ -468,6 +573,17 @@ footer{
 @keyframes dotflash{0%,80%,100%{opacity:0.25;}40%{opacity:1;}}
 
 .chat-input-area{border-top:1px solid var(--border);padding:14px;flex-shrink:0;}
+.target-banner{
+  display:none;align-items:center;justify-content:space-between;gap:8px;
+  background:var(--violet-soft);border:1px solid rgba(139,124,246,0.3);border-radius:10px;
+  padding:9px 12px;margin-bottom:10px;font-size:12.5px;color:var(--text);
+}
+.target-banner.active{display:flex;}
+.target-banner .t-info{display:flex;align-items:center;gap:7px;min-width:0;}
+.target-banner .t-info b{color:var(--violet);font-family:var(--font-mono);font-size:11.5px;flex-shrink:0;}
+.target-banner .t-info span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-dim);}
+.target-banner button{color:var(--text-faint);flex-shrink:0;}
+.target-banner button:hover{color:var(--text);}
 .chat-input-box{
   background:var(--surface);border:1px solid var(--border);border-radius:12px;
   display:flex;flex-direction:column;overflow:hidden;
@@ -476,6 +592,7 @@ footer{
   padding:12px 14px;font-size:14px;resize:none;min-height:44px;max-height:140px;line-height:1.5;
 }
 .chat-input-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-top:1px solid var(--border);}
+.chat-input-bar-left{display:flex;align-items:center;gap:6px;}
 .attach-preview{display:none;align-items:center;gap:10px;padding:0 14px 10px;}
 .attach-preview.active{display:flex;}
 .attach-preview img{width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--border);}
@@ -487,18 +604,30 @@ footer{
 }
 
 /* preview pane */
-.preview-pane{flex:1;display:flex;flex-direction:column;background:var(--bg-deep);}
+.preview-pane{flex:1;display:flex;flex-direction:column;background:var(--bg-deep);min-width:0;}
 .preview-toolbar{
   display:flex;align-items:center;justify-content:space-between;
-  padding:9px 16px;border-bottom:1px solid var(--border);flex-shrink:0;
+  padding:9px 16px;border-bottom:1px solid var(--border);flex-shrink:0;gap:10px;flex-wrap:wrap;
 }
 .preview-tabs{display:flex;gap:4px;background:var(--surface);border-radius:8px;padding:3px;}
 .preview-tab{
   font-size:13px;padding:6px 13px;border-radius:6px;color:var(--text-dim);
 }
 .preview-tab.active{background:var(--surface-2);color:var(--text);}
+.preview-toolbar-right{display:flex;gap:8px;align-items:center;}
+.select-mode-btn{
+  display:flex;align-items:center;gap:7px;font-size:13px;
+}
+.select-hint{
+  position:absolute;top:10px;left:10px;z-index:30;
+  background:var(--violet);color:#0f0c24;font-size:12px;font-weight:600;
+  padding:7px 12px;border-radius:99px;display:none;align-items:center;gap:7px;
+  box-shadow:0 10px 24px -10px rgba(139,124,246,0.6);
+}
+.select-hint.active{display:flex;}
 .preview-frame-wrap{flex:1;position:relative;background:#0c0c11;}
 .preview-frame-wrap iframe{width:100%;height:100%;border:none;background:#fff;}
+.preview-frame-wrap.selecting iframe{cursor:crosshair;}
 .code-view{
   flex:1;overflow:auto;padding:18px 22px;font-family:var(--font-mono);font-size:13px;
   line-height:1.6;color:#d8d5e6;white-space:pre-wrap;display:none;
@@ -517,11 +646,11 @@ footer{
 .preview-empty p{font-size:14px;max-width:260px;text-align:center;}
 
 .api-key-banner{
-  display:flex;align-items:center;gap:10px;padding:10px 16px;
+  display:flex;align-items:center;gap:10px;padding:10px 16px;flex-wrap:wrap;
   background:rgba(255,122,69,0.07);border-bottom:1px solid var(--border);font-size:13px;color:var(--text-dim);
 }
 .api-key-banner input{
-  flex:1;background:var(--bg-deep);border:1px solid var(--border);border-radius:7px;
+  flex:1;min-width:160px;background:var(--bg-deep);border:1px solid var(--border);border-radius:7px;
   padding:7px 11px;font-size:13px;font-family:var(--font-mono);
 }
 .api-key-banner button{flex-shrink:0;}
@@ -529,6 +658,7 @@ footer{
 @media (max-width:760px){
   .chat-pane{width:100%;position:absolute;inset:0;z-index:10;}
   .builder-main{position:relative;}
+  .version-menu{width:240px;right:-10px;}
 }
 </style>
 </head>
@@ -537,11 +667,13 @@ footer{
 <div class="grain-bg"></div>
 
 <div id="landingView" class="app-view active">
+
   <nav class="nav" id="mainNav">
     <div class="nav-inner">
       <div class="logo"><span class="logo-mark">{ }</span>Forja</div>
       <div class="nav-links">
         <a href="#como-funciona">Como funciona</a>
+        <a href="#recursos">Recursos</a>
         <a href="#modelos">Modelos</a>
         <a href="#numeros">Números</a>
       </div>
@@ -574,6 +706,7 @@ footer{
         <button class="btn btn-primary btn-sm" onclick="showAuth('signup')">Construir →</button>
       </div>
     </div>
+
     <div class="hero-trust">USADO PARA PROTOTIPAR APPS, PAINÉIS E SITES TODOS OS DIAS</div>
   </header>
 
@@ -581,7 +714,7 @@ footer{
     <div class="section-head reveal">
       <span class="section-eyebrow">O PROCESSO</span>
       <h2>Da ideia ao app funcionando, em três etapas</h2>
-      <p>Cada etapa existe porque o passo anterior gerou o que ela precisa — a esteira real de construção.</p>
+      <p>Cada etapa existe porque o passo anterior gerou o que ela precisa — não é decoração, é a esteira real de construção.</p>
     </div>
     <div class="steps">
       <div class="step-card reveal">
@@ -598,9 +731,34 @@ footer{
       </div>
       <div class="step-card reveal">
         <span class="step-tag">ETAPA 3 / PUBLICAR</span>
-        <h3>Ajuste eifique</h3>
+        <h3>Ajuste e publique</h3>
         <p>Peça mudanças por texto — "muda a cor", "adiciona um gráfico" — e publique para o mundo com um link só seu.</p>
         <div class="step-visual">app.forja.dev/seu-projeto</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="recursos" style="padding-top:0;">
+    <div class="section-head reveal">
+      <span class="section-eyebrow">FERRAMENTAS DE QUEM CONSTRÓI</span>
+      <h2>Os mesmos recursos das plataformas profissionais</h2>
+      <p>Histórico de versões, seleção visual de elementos e edição direcionada — para você nunca perder um progresso ou ficar repetindo o pedido todo.</p>
+    </div>
+    <div class="feature-row">
+      <div class="feature-card reveal">
+        <div class="feature-icon" style="background:var(--violet-soft);color:var(--violet);">◎</div>
+        <h4>Clique e edite</h4>
+        <p>Aponte para qualquer botão, texto ou seção do preview e diga só o que mudar ali — sem precisar descrever onde ele está.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon" style="background:var(--accent-soft);color:var(--accent);">↺</div>
+        <h4>Histórico de versões</h4>
+        <p>Cada mudança gerada fica salva. Voltou pra uma versão pior? Um clique e você está de volta na anterior, sem perder nada.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon" style="background:rgba(127,231,163,0.12);color:var(--code-green);">⬡</div>
+        <h4>Publicação instantânea</h4>
+        <p>Quando o app estiver do seu jeito, publique com um clique e receba um link público pra compartilhar imediatamente.</p>
       </div>
     </div>
   </section>
@@ -647,6 +805,7 @@ footer{
           <div class="footer-col">
             <h5>PRODUTO</h5>
             <a href="#como-funciona">Como funciona</a>
+            <a href="#recursos">Recursos</a>
             <a href="#modelos">Modelos</a>
             <a href="#numeros">Números</a>
           </div>
@@ -727,7 +886,51 @@ footer{
       <a class="builder-back" href="javascript:void(0)" onclick="backToDashboard()">← Projetos</a>
       <input class="builder-title" id="builderTitle" value="Novo projeto" onchange="renameProject(this.value)" onkeydown="if(event.key==='Enter'){ event.preventDefault(); this.blur(); }">
     </div>
-    <div class="builder-status" id="builderStatus"><span>●</span> salvo</div>
+    <div class="builder-topbar-right">
+      <div class="builder-status" id="builderStatus"><span class="dot-saved">●</span> salvo</div>
+      <button class="btn btn-ghost btn-sm" onclick="toggleRulesModal()" title="Ver regras do Firestore necessárias para os apps gerados funcionarem">🔥 Regras Firestore</button>
+      <div class="version-wrap">
+        <button class="btn btn-ghost btn-sm" id="versionBtn" onclick="toggleVersionMenu()">↺ Versões <span id="versionCount" style="color:var(--text-faint);">(0)</span></button>
+        <div class="version-menu" id="versionMenu">
+          <div class="version-menu-head">HISTÓRICO DESTE PROJETO</div>
+          <div id="versionList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="rules-modal-overlay" id="rulesModalOverlay" onclick="if(event.target===this) toggleRulesModal()">
+    <div class="rules-modal">
+      <div class="rules-modal-head">
+        <h3>Regras do Firestore para os apps gerados</h3>
+        <button onclick="toggleRulesModal()">✕</button>
+      </div>
+      <p class="rules-modal-sub">Cole isto no Console do Firebase do projeto <code>forja-ia</code> → Firestore Database → Regras. Isso permite que cada app publicado tenha login próprio e salve dados isolados por usuário, sem expor dados de outros apps ou projetos.</p>
+      <pre id="rulesText">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Coleções do PRÓPRIO Forja (builder, projetos, login do Josy) ---
+    match /projects/{projectId} {
+      allow read, update, delete: if request.auth != null
+                                   && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null;
+    }
+    match /publicApps/{appId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // --- Dados dos APPS GERADOS pela IA (qualquer coleção começando com "app_") ---
+    // Cada usuário final só lê/escreve dentro do próprio uid.
+    match /{appCollection}/{uid}/{document=**} {
+      allow read, write: if appCollection.matches('app_.*')
+                          && request.auth != null
+                          && request.auth.uid == uid;
+    }
+  }
+}</pre>
+      <button class="btn btn-primary btn-sm" onclick="copyRulesText()">Copiar regras</button>
+    </div>
   </div>
   <div class="api-key-banner" id="apiKeyBanner">
     <span>🔑 Cole sua chave da API do Gemini (gratuita) para gerar código de verdade:</span>
@@ -739,12 +942,18 @@ footer{
     <div class="chat-pane">
       <div class="chat-messages" id="chatMessages"></div>
       <div class="chat-input-area">
+        <div class="target-banner" id="targetBanner">
+          <div class="t-info"><b>EDITANDO</b><span id="targetBannerText">elemento selecionado</span></div>
+          <button onclick="clearSelectedTarget()" title="Remover seleção">✕</button>
+        </div>
         <div id="attachPreview" class="attach-preview"></div>
         <div class="chat-input-box">
           <textarea id="chatInput" placeholder="Descreva o que você quer construir ou mudar…" onkeydown="handleChatKeydown(event)"></textarea>
           <div class="chat-input-bar">
-            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('imageAttachInput').click()" title="Anexar captura de tela ou imagem">📎 Anexar</button>
-            <input type="file" id="imageAttachInput" accept="image/*" style="display:none;" onchange="handleImageAttach(event)">
+            <div class="chat-input-bar-left">
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('imageAttachInput').click()" title="Anexar captura de tela ou imagem">📎 Anexar</button>
+              <input type="file" id="imageAttachInput" accept="image/*" style="display:none;" onchange="handleImageAttach(event)">
+            </div>
             <button class="btn btn-primary btn-sm" onclick="sendChatMessage()">Enviar →</button>
           </div>
         </div>
@@ -756,13 +965,17 @@ footer{
           <button class="preview-tab active" id="tabPreview" onclick="switchPreviewTab('preview')">Visualização</button>
           <button class="preview-tab" id="tabCode" onclick="switchPreviewTab('code')">Código</button>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;">
+        <div class="preview-toolbar-right">
+          <button class="btn-icon select-mode-btn" id="selectModeBtn" onclick="toggleSelectMode()" title="Selecionar elemento no preview para editar">
+            ◎
+          </button>
           <span id="publishedBadge" style="display:none;font-size:12.5px;color:var(--code-green);font-family:var(--font-mono);"></span>
           <button class="btn btn-ghost btn-sm" onclick="downloadProjectCode()">Baixar HTML</button>
           <button class="btn btn-primary btn-sm" onclick="publishProject()">🚀 Publicar</button>
         </div>
       </div>
       <div class="preview-frame-wrap active" id="previewFrameWrap">
+        <span class="select-hint" id="selectHint">◎ Clique em um elemento do app para editá-lo</span>
         <div class="preview-empty" id="previewEmpty">
           <div class="icon">◌</div>
           <p>Descreva seu app na conversa ao lado para ver o preview aparecer aqui.</p>
@@ -773,6 +986,7 @@ footer{
     </div>
   </div>
 </div>
+
 
 <script>
 /* ---------- typing animation ---------- */
@@ -847,7 +1061,7 @@ const templates = [
 ];
 const grid = document.getElementById('templatesGrid');
 templates.forEach((t,i)=>{
-  const hueShift = i%2===0 ? 'rgba(255,122,69,0.12)' : 'rgba(127,231,163,0.08)';
+  const hueShift = i%2===0 ? 'rgba(255,122,69,0.12)' : 'rgba(139,124,246,0.10)';
   const card = document.createElement('div');
   card.className = 'template-card reveal';
   card.innerHTML = `
@@ -857,9 +1071,9 @@ templates.forEach((t,i)=>{
   card.onclick = ()=>startFromTemplate(t);
   grid.appendChild(card);
 });
-revealEls.forEach(el=>io.observe(el));
 document.querySelectorAll('.template-card.reveal').forEach(el=>io.observe(el));
 
+/* ---------- iniciar projeto a partir de um modelo ---------- */
 function startFromTemplate(template){
   pendingTemplatePrompt = {name: template.name, prompt: template.prompt};
   if(currentUser){
@@ -869,6 +1083,7 @@ function startFromTemplate(template){
   }
 }
 
+/* ---------- view switching ---------- */
 function showView(id){
   document.querySelectorAll('.app-view').forEach(v=>v.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -904,6 +1119,8 @@ function showAuth(mode){
 <script>
 /* =================================================================
    CONFIGURAÇÃO DO FIREBASE
+   Substitua os valores abaixo pelos do seu projeto Firebase.
+   Console > Configurações do projeto > Seus apps > SDK config
 ================================================================= */
 const firebaseConfig = {
   apiKey: "AIzaSyCwu9-ixCL2JjsfVZQmmQfCedcOR5IQhKY",
@@ -942,8 +1159,24 @@ let currentProjectId = null;
 let currentProjectCode = '';
 let chatHistory = [];
 let geminiApiKey = localStorage.getItem('forja_gemini_key') || '';
-let pendingAttachment = null;
-let pendingTemplatePrompt = null;
+let pendingAttachment = null; // { base64, mimeType, name }
+let pendingTemplatePrompt = null; // { name, prompt } aguardando login/cadastro para iniciar
+
+/* histórico de versões (por projeto, mantido em memória + persistido no Firestore) */
+let versionHistory = []; // [{code, description, timestamp}], mais recente no início
+let currentVersionIndex = 0; // índice da versão atualmente exibida (0 = mais recente)
+const MAX_VERSIONS = 30;
+
+/* seleção visual de elemento */
+let selectModeActive = false;
+let selectedTarget = null; // { selectorHint, tag, text, html }
+
+/* =================================================================
+   MODELOS DE IA — ORDEM DE FALLBACK
+   Tenta o primeiro; se vier "sobrecarregado"/indisponível, tenta o próximo.
+   Isso resolve o erro de "alta demanda" sem depender de um único modelo.
+================================================================= */
+const GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
 
 /* =================================================================
    AUTENTICAÇÃO
@@ -955,7 +1188,7 @@ function showAuthError(msg){
 }
 
 function submitAuth(){
-  if(!firebaseReady){ showAuthError('Configure o Firebase primeiro.'); return; }
+  if(!firebaseReady){ showAuthError('Configure o Firebase primeiro (veja o aviso no canto da tela).'); return; }
   const email = document.getElementById('authEmail').value.trim();
   const password = document.getElementById('authPassword').value;
   const name = document.getElementById('authName').value.trim();
@@ -979,7 +1212,7 @@ function submitAuth(){
 
 function traduzErro(code){
   const map = {
-    'auth/email-already-in-use':'Esse e-mail já tem uma conta.',
+    'auth/email-already-in-use':'Esse e-mail já tem uma conta. Tente entrar.',
     'auth/invalid-email':'E-mail inválido.',
     'auth/weak-password':'A senha precisa ter pelo menos 6 caracteres.',
     'auth/user-not-found':'Não encontramos essa conta.',
@@ -998,7 +1231,9 @@ function doLogout(){
 if(firebaseReady){
   auth.onAuthStateChanged(user=>{
     currentUser = user;
-    if(user){ renderDashboardForUser(user); }
+    if(user){
+      renderDashboardForUser(user);
+    }
   });
 }
 
@@ -1027,6 +1262,7 @@ function loadProjects(){
       const grid = document.getElementById('projectsGrid');
       grid.innerHTML = '<div class="new-project-card" onclick="createProject()"><div class="plus">+</div><span>Novo projeto</span></div>';
       if(snap.empty) return;
+      // ordena no cliente por updatedAt desc (evita exigir índice composto no Firestore)
       const docs = snap.docs.slice().sort((a,b)=>{
         const ta = a.data().updatedAt?.toMillis ? a.data().updatedAt.toMillis() : 0;
         const tb = b.data().updatedAt?.toMillis ? b.data().updatedAt.toMillis() : 0;
@@ -1036,24 +1272,43 @@ function loadProjects(){
         const p = doc.data();
         const card = document.createElement('div');
         card.className = 'project-card';
+        const thumbInner = p.code
+          ? `<iframe srcdoc="${escapeHtml(p.code)}" tabindex="-1"></iframe>`
+          : '{ }';
         card.innerHTML = `
-          <div class="project-thumb">{ }</div>
-          <div class="project-info"><h4>${escapeHtml(p.name||'Sem nome')}</h4><span>atualizado recentemente</span></div>`;
+          ${p.publishedAt ? '<span class="project-published-tag">● publicado</span>' : ''}
+          <div class="project-thumb">${thumbInner}</div>
+          <div class="project-info">
+            <div><h4>${escapeHtml(p.name||'Sem nome')}</h4><span>atualizado recentemente</span></div>
+            <button class="project-delete" title="Excluir projeto" onclick="event.stopPropagation();deleteProject('${doc.id}','${escapeHtml(p.name||'Sem nome').replace(/'/g,"\\'")}')">🗑</button>
+          </div>`;
         card.onclick = ()=>openProject(doc.id, p);
         grid.appendChild(card);
       });
     })
     .catch(err=>{
       console.error('Erro ao carregar projetos:', err);
+      alert('Não foi possível carregar seus projetos.\n\nMotivo: ' + err.message);
     });
+}
+
+function deleteProject(id, name){
+  if(!confirm(`Excluir "${name}"? Essa ação não pode ser desfeita.`)) return;
+  db.collection('projects').doc(id).delete().then(()=>loadProjects()).catch(err=>{
+    alert('Não foi possível excluir o projeto.\n\nMotivo: ' + err.message);
+  });
 }
 
 function createProject(initialName, initialPrompt){
   const name = initialName || 'Novo projeto';
   if(!firebaseReady || !currentUser){
-    currentProjectId = null;
+    // fallback sem firebase: abre builder local, sem persistência do PRÓPRIO Forja —
+    // mas ainda gera um ID estável para a coleção Firestore que o APP GERADO vai usar
+    currentProjectId = 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
     currentProjectCode = '';
     chatHistory = [];
+    versionHistory = [];
+    currentVersionIndex = 0;
     document.getElementById('builderTitle').value = name;
     resetBuilderUI();
     showBuilder();
@@ -1064,11 +1319,15 @@ function createProject(initialName, initialPrompt){
     userId: currentUser.uid,
     name: name,
     code: '',
+    versionHistory: [],
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   }).then(ref=>{
-    openProject(ref.id, {name:name, code:''});
+    openProject(ref.id, {name:name, code:'', versionHistory:[]});
     if(initialPrompt) sendChatMessage(initialPrompt);
+  }).catch(err=>{
+    console.error('Erro ao criar projeto:', err);
+    alert('Não foi possível criar o projeto.\n\nMotivo: ' + err.message + '\n\nSe o erro mencionar "permissão" ou "permission-denied", revise as regras do Firestore no Console do Firebase.');
   });
 }
 
@@ -1076,10 +1335,13 @@ function openProject(id, data){
   currentProjectId = id;
   currentProjectCode = data.code || '';
   chatHistory = data.chatHistory || [];
+  versionHistory = data.versionHistory || [];
+  currentVersionIndex = 0;
   document.getElementById('builderTitle').value = data.name || 'Novo projeto';
   resetBuilderUI();
-  chatHistory.forEach(m=>renderMessage(m.role, m.content, false));
+  chatHistory.forEach(m=>renderMessage(m.role, m.content, false, null, m.targetLabel));
   if(currentProjectCode){ renderPreview(currentProjectCode); }
+  renderVersionMenu();
   showBuilder();
 }
 
@@ -1088,6 +1350,8 @@ function resetBuilderUI(){
   document.getElementById('previewFrame').style.display = 'none';
   document.getElementById('previewEmpty').style.display = 'flex';
   document.getElementById('codeView').textContent = '';
+  clearSelectedTarget();
+  setSelectMode(false);
   switchPreviewTab('preview');
 }
 
@@ -1102,15 +1366,17 @@ function renameProject(newName){
 
 function saveProjectState(){
   if(!firebaseReady || !currentProjectId) return;
-  document.getElementById('builderStatus').innerHTML = '<span>●</span> salvando…';
+  const statusEl = document.getElementById('builderStatus');
+  statusEl.innerHTML = '<span class="dot-saving">●</span> salvando…';
   db.collection('projects').doc(currentProjectId).update({
     code: currentProjectCode,
     chatHistory: chatHistory,
+    versionHistory: versionHistory,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   }).then(()=>{
-    document.getElementById('builderStatus').innerHTML = '<span>●</span> salvo';
+    statusEl.innerHTML = '<span class="dot-saved">●</span> salvo';
   }).catch(()=>{
-    document.getElementById('builderStatus').innerHTML = '<span>●</span> erro ao salvar';
+    statusEl.innerHTML = '<span class="dot-error">●</span> erro ao salvar';
   });
 }
 
@@ -1119,6 +1385,7 @@ function backToDashboard(){
   if(titleInput && currentProjectId){
     renameProject(titleInput.value.trim() || 'Projeto sem nome');
   }
+  setSelectMode(false);
   showView('dashboardView');
   loadProjects();
 }
@@ -1130,6 +1397,7 @@ function showBuilder(){
   document.getElementById('apiKeyBanner').style.display = geminiApiKey ? 'none' : 'flex';
 }
 
+/* override showView para também esconder o builder quando necessário */
 const _origShowView = showView;
 showView = function(id){
   document.querySelectorAll('.builder-view').forEach(v=>v.classList.remove('active'));
@@ -1140,6 +1408,19 @@ function escapeHtml(str){
   const d = document.createElement('div');
   d.textContent = str;
   return d.innerHTML;
+}
+
+function toggleRulesModal(){
+  document.getElementById('rulesModalOverlay').classList.toggle('open');
+}
+
+function copyRulesText(){
+  const text = document.getElementById('rulesText').textContent;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>alert('Regras copiadas! Cole no Console do Firebase → Firestore Database → Regras.'));
+  } else {
+    alert('Não foi possível copiar automaticamente. Selecione o texto manualmente.');
+  }
 }
 
 /* =================================================================
@@ -1154,7 +1435,158 @@ function saveApiKey(){
 }
 
 /* =================================================================
-   CHAT + GERAÇÃO DE CÓDIGO (Modelo Atualizado)
+   HISTÓRICO DE VERSÕES
+================================================================= */
+function pushVersion(code, description){
+  versionHistory.unshift({
+    code: code,
+    description: description || 'Atualização',
+    timestamp: Date.now()
+  });
+  if(versionHistory.length > MAX_VERSIONS) versionHistory.length = MAX_VERSIONS;
+  currentVersionIndex = 0;
+  renderVersionMenu();
+}
+
+function renderVersionMenu(){
+  document.getElementById('versionCount').textContent = '(' + versionHistory.length + ')';
+  const list = document.getElementById('versionList');
+  if(versionHistory.length === 0){
+    list.innerHTML = '<div style="padding:16px 10px;font-size:13px;color:var(--text-faint);">Nenhuma versão ainda. Toda mudança gerada vai aparecer aqui.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  versionHistory.forEach((v,i)=>{
+    const item = document.createElement('div');
+    item.className = 'version-item' + (i===currentVersionIndex ? ' current' : '');
+    const time = new Date(v.timestamp).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    item.innerHTML = `
+      <div class="v-label">
+        <span class="v-desc">${escapeHtml(v.description)}</span>
+        <span class="v-time">${time}</span>
+      </div>
+      ${i===currentVersionIndex ? '<span class="v-badge">atual</span>' : ''}`;
+    item.onclick = ()=>restoreVersion(i);
+    list.appendChild(item);
+  });
+}
+
+function toggleVersionMenu(){
+  document.getElementById('versionMenu').classList.toggle('open');
+}
+document.addEventListener('click', (e)=>{
+  const wrap = document.querySelector('.version-wrap');
+  if(wrap && !wrap.contains(e.target)) document.getElementById('versionMenu').classList.remove('open');
+});
+
+function restoreVersion(index){
+  const v = versionHistory[index];
+  if(!v) return;
+  currentVersionIndex = index;
+  currentProjectCode = v.code;
+  renderPreview(v.code);
+  renderVersionMenu();
+  document.getElementById('versionMenu').classList.remove('open');
+  renderMessage('ai', `Restaurei a versão "${v.description}".`, true);
+  chatHistory.push({role:'ai', content:`Versão restaurada: ${v.description}`});
+  saveProjectState();
+}
+
+/* =================================================================
+   SELEÇÃO VISUAL DE ELEMENTO (clique no preview para editar)
+================================================================= */
+function toggleSelectMode(){ setSelectMode(!selectModeActive); }
+
+function setSelectMode(on){
+  selectModeActive = on;
+  document.getElementById('selectModeBtn').classList.toggle('active', on);
+  document.getElementById('selectHint').classList.toggle('active', on);
+  document.getElementById('previewFrameWrap').classList.toggle('selecting', on);
+  const frame = document.getElementById('previewFrame');
+  if(frame.contentWindow){
+    try{ injectOrRemoveSelectListener(on); }catch(e){ /* cross-frame restrictions com srcdoc não se aplicam aqui */ }
+  }
+}
+
+function injectOrRemoveSelectListener(enable){
+  const frame = document.getElementById('previewFrame');
+  const doc = frame.contentDocument;
+  if(!doc || !doc.body) return;
+  if(enable){
+    doc.body.dataset.forjaSelecting = '1';
+    doc.addEventListener('mouseover', handleIframeHover, true);
+    doc.addEventListener('mouseout', handleIframeHoverOut, true);
+    doc.addEventListener('click', handleIframeClick, true);
+  } else {
+    delete doc.body.dataset.forjaSelecting;
+    clearIframeHighlight();
+    doc.removeEventListener('mouseover', handleIframeHover, true);
+    doc.removeEventListener('mouseout', handleIframeHoverOut, true);
+    doc.removeEventListener('click', handleIframeClick, true);
+  }
+}
+
+let lastHoverEl = null;
+function handleIframeHover(e){
+  if(!selectModeActive) return;
+  if(lastHoverEl) lastHoverEl.style.outline = '';
+  lastHoverEl = e.target;
+  e.target.style.outline = '2px solid #8b7cf6';
+  e.target.style.outlineOffset = '1px';
+}
+function handleIframeHoverOut(e){
+  if(e.target) e.target.style.outline = '';
+}
+function clearIframeHighlight(){
+  if(lastHoverEl){ lastHoverEl.style.outline=''; lastHoverEl=null; }
+}
+
+function handleIframeClick(e){
+  if(!selectModeActive) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const el = e.target;
+  const tag = el.tagName.toLowerCase();
+  const text = (el.textContent||'').trim().slice(0,60);
+  const classAttr = el.className && typeof el.className === 'string' ? el.className.trim() : '';
+  const idAttr = el.id || '';
+  // remove o outline temporário de hover antes de capturar o snippet,
+  // para não "contaminar" o HTML de referência enviado à IA
+  const prevOutline = el.style.outline, prevOutlineOffset = el.style.outlineOffset;
+  el.style.outline = ''; el.style.outlineOffset = '';
+  let outerSnippet = '';
+  try{ outerSnippet = el.outerHTML.slice(0,300); }catch(_e){}
+  el.style.outline = prevOutline; el.style.outlineOffset = prevOutlineOffset;
+
+  selectedTarget = {
+    tag: tag,
+    id: idAttr,
+    className: classAttr,
+    text: text,
+    snippet: outerSnippet
+  };
+
+  setSelectMode(false);
+  showSelectedTargetBanner();
+  document.getElementById('chatInput').focus();
+}
+
+function showSelectedTargetBanner(){
+  if(!selectedTarget) { document.getElementById('targetBanner').classList.remove('active'); return; }
+  const label = selectedTarget.text
+    ? `<${selectedTarget.tag}> "${selectedTarget.text}"`
+    : `<${selectedTarget.tag}>${selectedTarget.id ? '#'+selectedTarget.id : ''}${selectedTarget.className ? '.'+selectedTarget.className.split(' ')[0] : ''}`;
+  document.getElementById('targetBannerText').textContent = label;
+  document.getElementById('targetBanner').classList.add('active');
+}
+
+function clearSelectedTarget(){
+  selectedTarget = null;
+  document.getElementById('targetBanner').classList.remove('active');
+}
+
+/* =================================================================
+   CHAT + GERAÇÃO DE CÓDIGO
 ================================================================= */
 function handleChatKeydown(e){
   if(e.key === 'Enter' && !e.shiftKey){
@@ -1167,7 +1599,11 @@ function handleImageAttach(e){
   const file = e.target.files[0];
   if(!file) return;
   if(!file.type.startsWith('image/')){
-    alert('Por favor, selecione um arquivo de imagem.');
+    alert('Por favor, selecione um arquivo de imagem (captura de tela, foto, etc).');
+    return;
+  }
+  if(file.size > 4 * 1024 * 1024){
+    alert('Imagem muito grande. Use uma imagem de até 4MB.');
     return;
   }
   const reader = new FileReader();
@@ -1199,13 +1635,14 @@ function removeAttachment(){
   renderAttachPreview();
 }
 
-function renderMessage(role, content, animate=true, attachment=null){
+function renderMessage(role, content, animate=true, attachment=null, targetLabel=null){
   const wrap = document.getElementById('chatMessages');
   const msg = document.createElement('div');
   msg.className = 'msg ' + role;
   const roleLabel = role === 'user' ? 'VOCÊ' : 'FORJA AI';
   const imgHtml = attachment ? `<img class="attached-thumb" src="data:${attachment.mimeType};base64,${attachment.base64}" alt="anexo">` : '';
-  msg.innerHTML = `<div class="msg-role ${role==='ai'?'ai':''}">${roleLabel}</div><div class="msg-bubble">${imgHtml}</div>`;
+  const targetHtml = targetLabel ? `<span class="msg-target-tag">◎ ${escapeHtml(targetLabel)}</span><br>` : '';
+  msg.innerHTML = `<div class="msg-role ${role==='ai'?'ai':''}">${roleLabel}</div><div class="msg-bubble">${imgHtml}${targetHtml}</div>`;
   const bubble = msg.querySelector('.msg-bubble');
   const textNode = document.createTextNode(content);
   bubble.appendChild(textNode);
@@ -1227,23 +1664,80 @@ function renderThinking(){
   wrap.scrollTop = wrap.scrollHeight;
 }
 
+function updateThinking(text){
+  const el = document.getElementById('thinkingMsg');
+  if(!el) return;
+  const bubble = el.querySelector('.msg-bubble');
+  bubble.innerHTML = text + ' <span class="dot-flash"><span></span><span></span><span></span></span>';
+}
+
 function removeThinking(){
   const el = document.getElementById('thinkingMsg');
   if(el) el.remove();
+}
+
+/* chama a API do Gemini, tentando modelos da lista de fallback em sequência
+   até um responder (resolve o erro de "alta demanda" / modelo sobrecarregado) */
+async function callGeminiWithFallback(systemPrompt, userParts){
+  let lastError = null;
+  for(let i=0; i<GEMINI_MODELS.length; i++){
+    const model = GEMINI_MODELS[i];
+    if(i>0) updateThinking(`Tentando modelo alternativo (${i+1}/${GEMINI_MODELS.length})…`);
+    try{
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'x-goog-api-key': geminiApiKey
+        },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role:'user', parts: userParts }],
+          generationConfig: { maxOutputTokens: 8000 }
+        })
+      });
+
+      if(!response.ok){
+        const errBody = await response.json().catch(()=>({}));
+        const msg = errBody?.error?.message || ('Erro HTTP ' + response.status);
+        const overloaded = response.status === 503 || response.status === 429 || /overloaded|high demand|quota/i.test(msg);
+        lastError = new Error(msg);
+        if(overloaded && i < GEMINI_MODELS.length-1) continue; // tenta o próximo modelo
+        throw lastError;
+      }
+
+      const data = await response.json();
+      const candidate = data?.candidates?.[0];
+      if(!candidate){
+        throw new Error('A IA não retornou conteúdo (pode ter sido bloqueado por segurança). Tente reformular o pedido.');
+      }
+      return (candidate.content?.parts || []).map(p=>p.text||'').join('\n').trim();
+
+    }catch(err){
+      lastError = err;
+      const overloaded = /overloaded|high demand|quota|503|429/i.test(err.message);
+      if(overloaded && i < GEMINI_MODELS.length-1) continue;
+      throw lastError;
+    }
+  }
+  throw lastError || new Error('Não foi possível gerar o código.');
 }
 
 async function sendChatMessage(forcedText){
   const input = document.getElementById('chatInput');
   const text = (typeof forcedText === 'string' ? forcedText : input.value).trim();
   const attachment = pendingAttachment;
+  const target = selectedTarget;
   if(!text && !attachment) return;
   if(typeof forcedText !== 'string') input.value = '';
 
-  renderMessage('user', text || '(imagem enviada sem texto)', true, attachment);
-  chatHistory.push({role:'user', content:text || '(imagem enviada sem texto)', hadAttachment: !!attachment});
+  const targetLabel = target ? (target.text ? `<${target.tag}> "${target.text}"` : `<${target.tag}>`) : null;
+  renderMessage('user', text || '(imagem enviada sem texto)', true, attachment, targetLabel);
+  chatHistory.push({role:'user', content:text || '(imagem enviada sem texto)', hadAttachment: !!attachment, targetLabel: targetLabel});
 
   pendingAttachment = null;
   renderAttachPreview();
+  clearSelectedTarget();
 
   if(!geminiApiKey){
     renderMessage('ai', 'Antes de gerar código de verdade, cole sua chave da API do Gemini na barra acima. Por enquanto, vou só anotar seu pedido.');
@@ -1255,7 +1749,47 @@ async function sendChatMessage(forcedText){
   renderThinking();
 
   try{
-    const systemPrompt = `Você é um gerador de código especializado em criar aplicações web completas em um ÚNICO arquivo HTML (com CSS e JS embutidos), sem dependências de build. Sempre responda APENAS com o código HTML completo, começando com <!DOCTYPE html> e nada mais — sem explicações antes ou depois, sem markdown, sem crases. Se o usuário já tinha um código anterior (fornecido abaixo) e está pedindo uma alteração, edite esse código existente em vez de recomeçar do zero. Se o usuário anexou uma imagem (captura de tela, referência visual, rascunho), use-a como referência visual ou funcional para o que precisa ser construído.
+    let targetContext = '';
+    if(target){
+      targetContext = `\n\nO USUÁRIO SELECIONOU UM ELEMENTO ESPECÍFICO DA TELA PARA EDITAR. Aplique a mudança pedida APENAS nesse elemento (ou no menor trecho de código necessário para afetá-lo), mantendo o resto do app intacto:
+- Tag: <${target.tag}>
+${target.id ? '- id: ' + target.id : ''}
+${target.className ? '- classes: ' + target.className : ''}
+- Texto visível aproximado: "${target.text}"
+- Trecho de HTML correspondente (referência, pode estar truncado): ${target.snippet}`;
+    }
+
+    const appCollectionId = 'app_' + currentProjectId;
+
+    const systemPrompt = `Você é um gerador de código especializado em criar aplicações web completas e FUNCIONAIS DE VERDADE, em um ÚNICO arquivo HTML (com CSS e JS embutidos), sem dependências de build. Sempre responda APENAS com o código HTML completo, começando com <!DOCTYPE html> e nada mais — sem explicações antes ou depois, sem markdown, sem crases.
+
+REGRA MAIS IMPORTANTE — PERSISTÊNCIA DE DADOS COM FIREBASE:
+O app que você gerar será publicado como um link público e usado por pessoas reais, em dispositivos diferentes, em momentos diferentes. Por isso, qualquer dado que o app crie, edite ou liste (clientes, tarefas, transações, mensagens, produtos, hábitos, posts, o que for) NÃO PODE viver só em variável JavaScript — precisa ser salvo no Firebase Firestore, ou os dados desaparecem ao recarregar a página e o app fica inútil para o usuário final.
+
+Sempre que o app tiver qualquer tipo de dado para guardar, inclua no <head> ou antes do </body>:
+\`\`\`
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></scr` + `ipt>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></scr` + `ipt>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></scr` + `ipt>
+\`\`\`
+E inicialize com EXATAMENTE esta config (não troque nenhum valor):
+\`\`\`js
+const firebaseConfig = ${JSON.stringify(firebaseConfig)};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const APP_COLLECTION = "${appCollectionId}";
+\`\`\`
+
+Regras de uso obrigatórias:
+1. SEMPRE implemente um login simples por e-mail/senha (firebase.auth().createUserWithEmailAndPassword / signInWithEmailAndPassword) antes de o usuário poder usar o app — uma telinha de entrar/criar conta, mesmo que simples. Use auth.onAuthStateChanged para saber se o usuário está logado e mostrar a tela certa.
+2. TODOS os dados do app (tarefas, clientes, registros, itens, mensagens, etc.) devem ser salvos em: db.collection(APP_COLLECTION).doc(auth.currentUser.uid).collection('items') — ou subcoleções nomeadas de forma clara dentro desse mesmo caminho. Isso garante que cada usuário só vê e edita os próprios dados, mesmo todos usando o mesmo app publicado.
+3. Use onSnapshot (escuta em tempo real) para listas, sempre que possível, em vez de um único get() — assim a tela atualiza sozinha quando o dado muda.
+4. Trate erros do Firebase (rede, permissão, etc.) mostrando uma mensagem amigável na tela, nunca deixe a tela em branco ou travada num "carregando".
+5. Se o pedido do usuário for puramente visual (uma landing page sem dados para salvar, por exemplo), o Firebase pode ser omitido — use-o apenas quando o app realmente precisa lembrar de algo entre sessões.
+6. NUNCA invente outro firebaseConfig nem troque o nome do banco — use sempre exatamente o bloco acima.
+
+Se o usuário já tinha um código anterior (fornecido abaixo) e está pedindo uma alteração, edite esse código existente em vez de recomeçar do zero, preservando tudo que não foi pedido para mudar — incluindo a configuração do Firebase e a lógica de login/dados já implementada. Se o usuário anexou uma imagem (captura de tela, referência visual, rascunho), use-a como referência visual ou funcional para o que precisa ser construído.${targetContext}
 
 ${currentProjectCode ? 'CÓDIGO ATUAL DO PROJETO:\n' + currentProjectCode : 'Não há código ainda — este é o primeiro pedido.'}`;
 
@@ -1264,31 +1798,7 @@ ${currentProjectCode ? 'CÓDIGO ATUAL DO PROJETO:\n' + currentProjectCode : 'Nã
     if(attachment) userParts.push({ inlineData: { mimeType: attachment.mimeType, data: attachment.base64 } });
     if(!text) userParts.push({ text: 'Use esta imagem como referência para construir o app.' });
 
-    // ATUALIZAÇÃO CRÍTICA: Definido o modelo estável oficial e de produção 'gemini-2.5-flash'
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-goog-api-key': geminiApiKey
-      },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ role:'user', parts: userParts }],
-        generationConfig: { maxOutputTokens: 8192 }
-      })
-    });
-
-    if(!response.ok){
-      const errBody = await response.json().catch(()=>({}));
-      throw new Error(errBody?.error?.message || ('Erro HTTP ' + response.status));
-    }
-
-    const data = await response.json();
-    const candidate = data?.candidates?.[0];
-    if(!candidate){
-      throw new Error('A IA não retornou conteúdo. Tente reformular seu pedido.');
-    }
-    const rawText = (candidate.content?.parts || []).map(p=>p.text||'').join('\n').trim();
+    const rawText = await callGeminiWithFallback(systemPrompt, userParts);
     const cleanCode = rawText.replace(/^```html\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
 
     removeThinking();
@@ -1297,11 +1807,18 @@ ${currentProjectCode ? 'CÓDIGO ATUAL DO PROJETO:\n' + currentProjectCode : 'Nã
 
     currentProjectCode = cleanCode;
     renderPreview(cleanCode);
+
+    const versionDesc = target
+      ? `Editou <${target.tag}>: ${text.slice(0,40)}`
+      : (text ? text.slice(0,50) : 'Mudança via imagem');
+    pushVersion(cleanCode, versionDesc);
+
     saveProjectState();
 
   }catch(err){
     removeThinking();
-    renderMessage('ai', 'Não consegui gerar o código: ' + err.message + '. Certifique-se de que sua chave da API está correta.');
+    renderMessage('ai', 'Não consegui gerar o código: ' + err.message + '. Verifique se a chave da API está correta, ou tente novamente em alguns segundos.', true, null, null);
+    document.querySelector('#chatMessages .msg:last-child .msg-bubble').classList.add('error');
     chatHistory.push({role:'ai', content:'Erro: ' + err.message});
   }
 }
@@ -1312,6 +1829,9 @@ function renderPreview(code){
   frame.style.display = 'block';
   frame.srcdoc = code;
   document.getElementById('codeView').textContent = code;
+  frame.onload = ()=>{
+    if(selectModeActive){ try{ injectOrRemoveSelectListener(true); }catch(e){} }
+  };
 }
 
 function switchPreviewTab(tab){
@@ -1319,6 +1839,7 @@ function switchPreviewTab(tab){
   document.getElementById('tabCode').classList.toggle('active', tab==='code');
   document.getElementById('previewFrameWrap').classList.toggle('active', tab==='preview');
   document.getElementById('codeView').classList.toggle('active', tab==='code');
+  if(tab !== 'preview') setSelectMode(false);
 }
 
 function downloadProjectCode(){
@@ -1333,11 +1854,11 @@ function downloadProjectCode(){
 }
 
 /* =================================================================
-   PUBLICAÇÃO
+   PUBLICAÇÃO (link público)
 ================================================================= */
 function publishProject(){
-  if(!currentProjectCode){ alert('Descreva seu app antes de publicar — ainda não há código.'); return; }
-  if(!firebaseReady){ alert('Configure o Firebase primeiro para publicar.'); return; }
+  if(!currentProjectCode){ alert('Descreva seu app no chat antes de publicar — ainda não há código gerado.'); return; }
+  if(!firebaseReady){ alert('Configure o Firebase primeiro para poder publicar (veja o aviso no canto da tela).'); return; }
   if(!currentProjectId){ alert('Salve o projeto antes de publicar.'); return; }
 
   const badge = document.getElementById('publishedBadge');
@@ -1362,7 +1883,7 @@ function publishProject(){
   }).catch(err=>{
     badge.textContent = '';
     badge.style.display = 'none';
-    alert('Erro ao publicar: ' + err.message);
+    alert('Não foi possível publicar.\n\nMotivo: ' + err.message + '\n\nPode ser necessário liberar a coleção "publicApps" nas regras do Firestore (leitura pública, escrita autenticada).');
   });
 }
 
@@ -1371,19 +1892,20 @@ function promptCopyLink(url){
     navigator.clipboard.writeText(url).then(()=>{
       alert('App publicado! Link copiado para a área de transferência:\n\n' + url);
     }).catch(()=>{
-      alert('App publicado! Link:\n\n' + url);
+      alert('App publicado! Aqui está o link:\n\n' + url);
     });
   } else {
-    alert('App publicado! Link:\n\n' + url);
+    alert('App publicado! Aqui está o link:\n\n' + url);
   }
 }
 
+/* ---------- visualizar app publicado via ?app=ID (sem necessidade de login) ---------- */
 function checkPublicAppRoute(){
   const params = new URLSearchParams(window.location.search);
   const appId = params.get('app');
   if(!appId) return false;
   if(!firebaseReady){
-    document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#a9a6b8;font-family:sans-serif;">Configuração do Firebase pendente.</div>';
+    document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#a9a6b8;font-family:sans-serif;">Configuração do Firebase pendente — não é possível carregar este app publicado.</div>';
     return true;
   }
   document.body.innerHTML = '<div id="publicAppLoading" style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#a9a6b8;font-family:sans-serif;">Carregando app publicado…</div>';
@@ -1400,7 +1922,7 @@ function checkPublicAppRoute(){
     document.body.innerHTML = '';
     document.body.appendChild(iframe);
   }).catch(()=>{
-    document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#a9a6b8;font-family:sans-serif;">Não foi possível carregar o app.</div>';
+    document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#a9a6b8;font-family:sans-serif;">Não foi possível carregar este app.</div>';
   });
   return true;
 }
