@@ -1951,6 +1951,7 @@ async function callGeminiStreaming(systemPrompt, userParts, onChunk){
       let buffer = '';
       let finishReason = null;
 
+      let parseFailures = 0;
       const processEvent = (eventBlock) => {
         // O prefixo "data:" só aparece na PRIMEIRA linha do bloco do evento;
         // as linhas seguintes do mesmo JSON multi-linha não o repetem.
@@ -1969,8 +1970,14 @@ async function callGeminiStreaming(systemPrompt, userParts, onChunk){
             fullText += chunk;
             onChunk(chunk, fullText);
           }
-        } catch(_e){
-          // Bloco ainda incompleto ou malformado — ignora silenciosamente.
+        } catch(parseErr){
+          // Um evento SSE completo (delimitado por \n\n) que não é JSON válido é um
+          // erro real, não um "ainda incompleto". Ignorar silenciosamente aqui criava
+          // buracos invisíveis no meio do código gerado (ex.: cortava no meio de um
+          // <script>, deixando o JS do app quebrado sem nenhum aviso — causa de
+          // "botão não responde ao clique"). Agora contamos e expomos isso.
+          parseFailures++;
+          console.warn('Evento SSE não pôde ser interpretado:', jsonStr.slice(0, 200), parseErr);
         }
       };
 
@@ -1994,6 +2001,9 @@ async function callGeminiStreaming(systemPrompt, userParts, onChunk){
       }
       if(finishReason === 'MAX_TOKENS'){
         throw new Error('A resposta da IA foi cortada por ultrapassar o limite de tamanho antes de terminar o código. Tente pedir algo um pouco mais específico, ou divida o pedido em partes menores.');
+      }
+      if(parseFailures > 0){
+        throw new Error(`${parseFailures} trecho(s) da resposta vieram corrompidos durante a transmissão, o que deixaria o app com partes faltando (ex.: botões sem funcionar). Tente gerar novamente.`);
       }
       return fullText.trim();
 
@@ -2105,6 +2115,24 @@ ${currentProjectCode ? 'CÓDIGO ATUAL DO PROJETO:\n' + currentProjectCode : 'Nã
     });
 
     const cleanCode = rawText.replace(/^```html\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+
+    // Checagem de integridade: um HTML gerado de verdade tem que abrir e fechar
+    // a tag <html> e ter pelo menos uma tag </script> casando uma <script> (quando
+    // há JS). Se faltar isso, o código está incompleto/corrompido e qualquer botão
+    // ou funcionalidade após o ponto do corte simplesmente não vai existir —
+    // melhor avisar agora do que dizer "Pronto!" para um app quebrado.
+    const hasOpenHtml = /<html[\s>]/i.test(cleanCode);
+    const hasCloseHtml = /<\/html\s*>/i.test(cleanCode);
+    const openScripts = (cleanCode.match(/<script[\s>]/gi) || []).length;
+    const closeScripts = (cleanCode.match(/<\/script\s*>/gi) || []).length;
+    if(!hasOpenHtml || !hasCloseHtml || openScripts !== closeScripts){
+      removeThinking();
+      switchPreviewTab('preview');
+      renderMessage('ai', 'O código gerado veio incompleto (provavelmente cortado durante a transmissão) — não atualizei a visualização para não deixar o app quebrado. Tente enviar a mensagem novamente.', true, null, null);
+      document.querySelector('#chatMessages .msg:last-child .msg-bubble').classList.add('error');
+      chatHistory.push({role:'ai', content:'Erro: código incompleto, geração descartada.'});
+      return;
+    }
 
     removeThinking();
 
