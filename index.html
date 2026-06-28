@@ -1215,7 +1215,7 @@ function saveApiKey(){
 }
 
 /* =================================================================
-   CHAT + GERAÇÃO DE CÓDIGO (Suporte a múltiplos backends)
+   CHAT + GERAÇÃO DE CÓDIGO (Suporte a múltiplos backends com Proxy)
 ================================================================= */
 function handleChatKeydown(e){
   if(e.key === 'Enter' && !e.shiftKey){
@@ -1354,17 +1354,22 @@ ${currentProjectCode ? 'CÓDIGO ATUAL DO PROJETO:\n' + currentProjectCode : 'Nã
       cleanCode = rawText.replace(/^```html\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
 
     } else if (currentProvider === 'groq') {
-      // Integração via API oficial da Groq Cloud
-      const messages = [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: text || "Use o contexto visual anterior para continuar modificando o app." }
-      ];
-      const response = await fetch('[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)', {
+      // Usando o CORS Proxy para evitar o erro HTTP 405 do navegador
+      const targetUrl = '[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)';
+      const proxyUrl = '[https://corsproxy.io/](https://corsproxy.io/)?' + encodeURIComponent(targetUrl);
+
+      const response = await fetch(proxyUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + activeKey },
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': 'Bearer ' + activeKey 
+        },
         body: JSON.stringify({
           model: "llama-3.3-70b-versatile",
-          messages: messages,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: text || "Use o contexto anterior para gerar/modificar o app." }
+          ],
           temperature: 0.2,
           max_tokens: 4000
         })
@@ -1378,10 +1383,16 @@ ${currentProjectCode ? 'CÓDIGO ATUAL DO PROJETO:\n' + currentProjectCode : 'Nã
       cleanCode = rawText.replace(/^```html\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
 
     } else if (currentProvider === 'openai') {
-      // Integração padrão OpenAI
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      // Usando o CORS Proxy para evitar bloqueio de CORS da OpenAI
+      const targetUrl = 'https://api.openai.com/v1/chat/completions';
+      const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
+
+      const response = await fetch(proxyUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + activeKey },
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': 'Bearer ' + activeKey 
+        },
         body: JSON.stringify({
           model: "gpt-4o-mini",
           messages: [
@@ -1399,14 +1410,16 @@ ${currentProjectCode ? 'CÓDIGO ATUAL DO PROJETO:\n' + currentProjectCode : 'Nã
       cleanCode = rawText.replace(/^```html\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
 
     } else if (currentProvider === 'anthropic') {
-      // Integração padrão Anthropic (Claude)
-      const response = await fetch('[https://api.anthropic.com/v1/messages](https://api.anthropic.com/v1/messages)', {
+      // Usando o CORS Proxy para evitar bloqueio de CORS da Anthropic
+      const targetUrl = '[https://api.anthropic.com/v1/messages](https://api.anthropic.com/v1/messages)';
+      const proxyUrl = '[https://corsproxy.io/](https://corsproxy.io/)?' + encodeURIComponent(targetUrl);
+
+      const response = await fetch(proxyUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': activeKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerously-allow-browser': 'true'
+          'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
           model: "claude-3-5-haiku-latest",
