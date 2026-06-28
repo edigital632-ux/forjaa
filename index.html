@@ -625,16 +625,52 @@ footer{
   box-shadow:0 10px 24px -10px rgba(139,124,246,0.6);
 }
 .select-hint.active{display:flex;}
-.preview-frame-wrap{flex:1;position:relative;background:#0c0c11;}
+.preview-frame-wrap{flex:1;position:relative;background:#0c0c11;display:none;}
+.preview-frame-wrap.active{display:block;}
 .preview-frame-wrap iframe{width:100%;height:100%;border:none;background:#fff;}
 .preview-frame-wrap.selecting iframe{cursor:crosshair;}
 .code-view{
-  flex:1;overflow:auto;padding:18px 22px;font-family:var(--font-mono);font-size:13px;
-  line-height:1.6;color:#d8d5e6;white-space:pre-wrap;display:none;
+  flex:1;overflow:hidden;display:none;flex-direction:column;font-family:var(--font-mono);font-size:13px;
 }
-.code-view.active{display:block;}
-.preview-frame-wrap.active{display:block;}
-.preview-frame-wrap{display:block;}
+.code-view.active{display:flex;}
+.code-view-header{
+  display:flex;align-items:center;gap:9px;padding:10px 16px;border-bottom:1px solid var(--border);
+  flex-shrink:0;background:var(--surface);
+}
+.code-view-header .dot-live{
+  width:7px;height:7px;border-radius:50%;background:var(--code-green);flex-shrink:0;
+  box-shadow:0 0 0 0 rgba(127,231,163,0.6);
+  animation:pulse-dot 1.4s infinite;
+}
+.code-view-header .dot-live.done{background:var(--text-faint);animation:none;box-shadow:none;}
+.code-view-header .fname{color:var(--text-dim);font-weight:500;}
+.code-view-header .fstatus{margin-left:auto;color:var(--text-faint);font-size:12px;}
+.code-view-body{flex:1;overflow:auto;line-height:1.65;color:#d8d5e6;position:relative;}
+.code-line{display:flex;cursor:pointer;animation:line-in .2s ease-out;}
+.code-line:hover{background:rgba(255,255,255,0.035);}
+.code-line.line-active{background:var(--accent-soft);}
+.code-line.line-active .ln{color:var(--accent);}
+.ln{
+  width:42px;flex-shrink:0;text-align:right;padding-right:14px;color:var(--text-faint);
+  user-select:none;font-size:12px;padding-top:1px;
+}
+.lc{flex:1;white-space:pre-wrap;word-break:break-all;padding-right:16px;}
+.lc .tag{color:var(--violet);}
+.lc .attr{color:var(--code-green);}
+.lc .str{color:var(--accent);}
+.lc .cmt{color:var(--text-faint);font-style:italic;}
+.cursor-blink{
+  display:inline-block;width:6px;height:14px;background:var(--accent);margin-left:1px;
+  animation:blink 1s step-end infinite;vertical-align:middle;
+}
+@keyframes blink{50%{opacity:0;}}
+@keyframes line-in{from{opacity:0;transform:translateY(2px);}to{opacity:1;transform:translateY(0);}}
+.line-toast{
+  position:absolute;bottom:14px;right:14px;background:var(--surface-2);border:1px solid var(--border);
+  padding:7px 13px;border-radius:8px;font-size:12.5px;color:var(--text);
+  opacity:0;transform:translateY(6px);transition:opacity .2s, transform .2s;pointer-events:none;
+}
+.line-toast.show{opacity:1;transform:translateY(0);}
 .preview-empty{
   height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
   color:var(--text-faint);
@@ -980,9 +1016,16 @@ service cloud.firestore {
           <div class="icon">◌</div>
           <p>Descreva seu app na conversa ao lado para ver o preview aparecer aqui.</p>
         </div>
-        <iframe id="previewFrame" style="display:none;"></iframe>
+        <iframe id="previewFrame" style="display:none;" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin allow-popups-to-escape-sandbox allow-downloads"></iframe>
       </div>
-      <div class="code-view" id="codeView"></div>
+      <div class="code-view" id="codeView">
+        <div class="code-view-header">
+          <span class="dot-live" id="codeDot"></span>
+          <span class="fname" id="codeFname">index.html</span>
+          <span class="fstatus" id="codeFstatus"></span>
+        </div>
+        <div class="code-view-body" id="codeViewBody"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1348,7 +1391,7 @@ function resetBuilderUI(){
   document.getElementById('chatMessages').innerHTML = '';
   document.getElementById('previewFrame').style.display = 'none';
   document.getElementById('previewEmpty').style.display = 'flex';
-  document.getElementById('codeView').textContent = '';
+  document.getElementById('codeViewBody').innerHTML = '';
   clearSelectedTarget();
   setSelectMode(false);
   switchPreviewTab('preview');
@@ -1673,15 +1716,130 @@ function removeThinking(){
 }
 
 /* =================================================================
-   ✅ CORREÇÃO PRINCIPAL: API v1beta + Gemini 2.5 Flash como modelo padrão
+   STREAMING COM EFEITO VISUAL LINHA POR LINHA (estilo Lovable/v0)
 ================================================================= */
-async function callGeminiWithFallback(systemPrompt, userParts){
+
+let liveLineBuf = '';
+let liveLineNum = 0;
+
+// Painel de código ao vivo durante streaming
+function showLiveCodePanel(){
+  switchPreviewTab('code');
+  document.getElementById('previewEmpty').style.display = 'none';
+  const body = document.getElementById('codeViewBody');
+  body.innerHTML = '';
+  liveLineBuf = '';
+  liveLineNum = 0;
+  const dot = document.getElementById('codeDot');
+  if(dot) dot.classList.remove('done');
+  document.getElementById('codeFname').textContent = 'index.html';
+  document.getElementById('codeFstatus').textContent = 'gerando…';
+}
+
+function escapeCodeHtml(str){
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function highlightLine(text){
+  const esc = escapeCodeHtml(text);
+  return esc
+    .replace(/(&lt;!--.*?--&gt;)/g, '<span class="cmt">$1</span>')
+    .replace(/(&lt;\/?[a-zA-Z0-9-]+)/g, '<span class="tag">$1</span>')
+    .replace(/([a-zA-Z-]+)=(&quot;|")/g, '<span class="attr">$1</span>=$2')
+    .replace(/(&quot;[^&]*?&quot;)/g, '<span class="str">$1</span>');
+}
+
+function makeCodeLineEl(num, text, typing){
+  const row = document.createElement('div');
+  row.className = 'code-line';
+  row.dataset.line = num;
+  const ln = document.createElement('span');
+  ln.className = 'ln';
+  ln.textContent = num;
+  const lc = document.createElement('span');
+  lc.className = 'lc';
+  lc.innerHTML = highlightLine(text);
+  if(typing){
+    const cur = document.createElement('span');
+    cur.className = 'cursor-blink';
+    lc.appendChild(cur);
+  }
+  row.appendChild(ln);
+  row.appendChild(lc);
+  row.addEventListener('click', ()=> onCodeLineClick(row, text));
+  return row;
+}
+
+function onCodeLineClick(row, text){
+  document.querySelectorAll('.code-line.line-active').forEach(el=>el.classList.remove('line-active'));
+  row.classList.add('line-active');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).catch(()=>{});
+  }
+  showLineToast('Linha ' + row.dataset.line + ' copiada');
+}
+
+function showLineToast(msg){
+  const wrap = document.getElementById('codeViewBody');
+  let toast = document.getElementById('lineToast');
+  if(!toast){
+    toast = document.createElement('div');
+    toast.id = 'lineToast';
+    toast.className = 'line-toast';
+    wrap.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=> toast.classList.remove('show'), 1300);
+}
+
+function appendLiveCode(chunk){
+  const body = document.getElementById('codeViewBody');
+  const oldTyping = body.querySelector('.code-line.typing-line');
+  if(oldTyping) oldTyping.remove();
+
+  liveLineBuf += chunk;
+  const parts = liveLineBuf.split('\n');
+  liveLineBuf = parts.pop();
+
+  parts.forEach(line=>{
+    liveLineNum++;
+    body.appendChild(makeCodeLineEl(liveLineNum, line));
+  });
+
+  if(liveLineBuf.length){
+    const typingEl = makeCodeLineEl(liveLineNum + 1, liveLineBuf, true);
+    typingEl.classList.add('typing-line');
+    body.appendChild(typingEl);
+  }
+  body.scrollTop = body.scrollHeight;
+}
+
+function renderFullCodeView(code){
+  const body = document.getElementById('codeViewBody');
+  body.innerHTML = '';
+  const lines = code.split('\n');
+  lines.forEach((line, i)=> body.appendChild(makeCodeLineEl(i + 1, line)));
+  const dot = document.getElementById('codeDot');
+  if(dot) dot.classList.add('done');
+  const fstatus = document.getElementById('codeFstatus');
+  if(fstatus) fstatus.textContent = lines.length + ' linhas';
+}
+
+function updateLiveCodeCount(chars){
+  updateThinking(`Gerando código… ${chars} caracteres`);
+  const fstatus = document.getElementById('codeFstatus');
+  if(fstatus) fstatus.textContent = chars + ' caracteres';
+}
+
+async function callGeminiStreaming(systemPrompt, userParts, onChunk){
   let lastError = null;
   for(let i = 0; i < GEMINI_MODELS.length; i++){
     const model = GEMINI_MODELS[i];
     if(i > 0) updateThinking(`Tentando modelo alternativo (${i+1}/${GEMINI_MODELS.length})…`);
     try{
-      const response = await fetch(`${GEMINI_API_BASE}/${model}:generateContent`, {
+      const response = await fetch(`${GEMINI_API_BASE}/${model}:streamGenerateContent?alt=sse`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1693,7 +1851,7 @@ async function callGeminiWithFallback(systemPrompt, userParts){
             { role: 'model', parts: [{ text: 'Entendido. Vou seguir todas as instruções.' }] },
             { role: 'user', parts: userParts }
           ],
-          generationConfig: { maxOutputTokens: 8000 }
+          generationConfig: { maxOutputTokens: 8192 }
         })
       });
 
@@ -1706,12 +1864,39 @@ async function callGeminiWithFallback(systemPrompt, userParts){
         throw lastError;
       }
 
-      const data = await response.json();
-      const candidate = data?.candidates?.[0];
-      if(!candidate){
-        throw new Error('A IA não retornou conteúdo (pode ter sido bloqueado por segurança). Tente reformular o pedido.');
+      // Ler stream SSE linha por linha
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+      let buffer = '';
+
+      while(true){
+        const { done, value } = await reader.read();
+        if(done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // última linha pode estar incompleta
+
+        for(const line of lines){
+          if(!line.startsWith('data: ')) continue;
+          const jsonStr = line.slice(6).trim();
+          if(jsonStr === '[DONE]') break;
+          try{
+            const parsed = JSON.parse(jsonStr);
+            const chunk = (parsed?.candidates?.[0]?.content?.parts || [])
+              .map(p => p.text || '').join('');
+            if(chunk){
+              fullText += chunk;
+              onChunk(chunk, fullText);
+            }
+          } catch(_e){}
+        }
       }
-      return (candidate.content?.parts || []).map(p => p.text || '').join('\n').trim();
+
+      if(!fullText){
+        throw new Error('A IA não retornou conteúdo. Tente reformular o pedido.');
+      }
+      return fullText.trim();
 
     } catch(err){
       lastError = err;
@@ -1747,6 +1932,8 @@ async function sendChatMessage(forcedText){
   }
 
   renderThinking();
+  // Ativa painel de código ao vivo imediatamente
+  showLiveCodePanel();
 
   try{
     let targetContext = '';
@@ -1795,15 +1982,24 @@ ${currentProjectCode ? 'CÓDIGO ATUAL DO PROJETO:\n' + currentProjectCode : 'Nã
     if(attachment) userParts.push({ inlineData: { mimeType: attachment.mimeType, data: attachment.base64 } });
     if(!text) userParts.push({ text: 'Use esta imagem como referência para construir o app.' });
 
-    const rawText = await callGeminiWithFallback(systemPrompt, userParts);
+    let charCount = 0;
+    const rawText = await callGeminiStreaming(systemPrompt, userParts, (chunk, fullSoFar) => {
+      charCount += chunk.length;
+      appendLiveCode(chunk);
+      updateLiveCodeCount(charCount);
+    });
+
     const cleanCode = rawText.replace(/^```html\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
 
     removeThinking();
-    renderMessage('ai', 'Pronto! Atualizei o preview ao lado com as mudanças.');
-    chatHistory.push({role:'ai', content:'Código gerado/atualizado.'});
 
+    // Mostrar preview final
     currentProjectCode = cleanCode;
-    renderPreview(cleanCode);
+    renderPreview(cleanCode);       // volta para aba de visualização com o app pronto
+    switchPreviewTab('preview');    // muda automaticamente para ver o resultado
+
+    renderMessage('ai', 'Pronto! Visualização atualizada ✓');
+    chatHistory.push({role:'ai', content:'Código gerado/atualizado.'});
 
     const versionDesc = target
       ? `Editou <${target.tag}>: ${text.slice(0,40)}`
@@ -1814,18 +2010,58 @@ ${currentProjectCode ? 'CÓDIGO ATUAL DO PROJETO:\n' + currentProjectCode : 'Nã
 
   } catch(err){
     removeThinking();
+    switchPreviewTab('preview');
     renderMessage('ai', 'Não consegui gerar o código: ' + err.message + '. Verifique se a chave da API está correta, ou tente novamente em alguns segundos.', true, null, null);
     document.querySelector('#chatMessages .msg:last-child .msg-bubble').classList.add('error');
     chatHistory.push({role:'ai', content:'Erro: ' + err.message});
   }
 }
 
+// Injeta um pequeno script de captura de erros no app gerado, para que
+// erros de JS apareçam como um aviso visível em vez de uma tela preta muda.
+function wrapCodeWithErrorOverlay(code){
+  const overlay = `
+<div id="__forja_err_overlay" style="display:none;position:fixed;inset:0;z-index:999999;background:#1a0f08;color:#ffb4a0;font-family:monospace;font-size:13px;padding:24px;overflow:auto;white-space:pre-wrap;line-height:1.6;">
+<div style="font-weight:700;color:#ff6b6b;margin-bottom:10px;font-size:15px;">⚠ Erro ao executar o app gerado</div>
+<div id="__forja_err_msg"></div>
+<div style="margin-top:16px;color:#a9a6b8;font-size:12px;">Isso normalmente é um erro de JavaScript no código gerado. Volte ao chat e peça para corrigir, ou tente gerar novamente.</div>
+</div>
+<script>
+(function(){
+  function showErr(msg){
+    var o = document.getElementById('__forja_err_overlay');
+    var m = document.getElementById('__forja_err_msg');
+    if(o && m && o.style.display !== 'block'){ m.textContent = msg; o.style.display = 'block'; }
+  }
+  window.addEventListener('error', function(e){ showErr((e.message||'Erro desconhecido') + (e.lineno ? (' — linha ' + e.lineno) : '')); });
+  window.addEventListener('unhandledrejection', function(e){ showErr('Erro assíncrono: ' + (e.reason && e.reason.message ? e.reason.message : e.reason)); });
+})();
+<\/script>`;
+  if(/<head[^>]*>/i.test(code)) return code.replace(/<head[^>]*>/i, m => m + overlay);
+  if(/<body[^>]*>/i.test(code)) return code.replace(/<body[^>]*>/i, m => m + overlay);
+  return overlay + code;
+}
+
 function renderPreview(code){
   document.getElementById('previewEmpty').style.display = 'none';
   const frame = document.getElementById('previewFrame');
   frame.style.display = 'block';
-  frame.srcdoc = code;
-  document.getElementById('codeView').textContent = code;
+
+  // srcdoc mantém o iframe na mesma origem da página (importante para Firebase
+  // Auth e fetch) e evita problemas de timing do blob: usado antes — essa troca,
+  // combinada com o overlay de erro abaixo, resolve a tela preta sem aviso.
+  if(frame._prevBlobUrl){ URL.revokeObjectURL(frame._prevBlobUrl); frame._prevBlobUrl = null; }
+  frame.removeAttribute('src');
+  try{
+    frame.srcdoc = wrapCodeWithErrorOverlay(code);
+  } catch(e){
+    const blob = new Blob([code], {type: 'text/html; charset=utf-8'});
+    const blobUrl = URL.createObjectURL(blob);
+    frame._prevBlobUrl = blobUrl;
+    frame.src = blobUrl;
+  }
+
+  renderFullCodeView(code);
   frame.onload = ()=>{
     if(selectModeActive){ try{ injectOrRemoveSelectListener(true); }catch(e){} }
   };
