@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -1941,37 +1940,54 @@ async function callGeminiStreaming(systemPrompt, userParts, onChunk){
         throw lastError;
       }
 
-      // Ler stream SSE linha por linha
+      // Ler stream SSE corretamente: cada evento SSE é um bloco de linhas terminado
+      // por uma linha vazia, e o JSON de cada evento pode vir formatado em
+      // VÁRIAS linhas (o Gemini faz isso com alt=sse). Processar linha a linha
+      // quebrava o JSON no meio em respostas grandes, corrompendo o código gerado
+      // (causa da "tela branca" ao criar o projeto).
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let fullText = '';
       let buffer = '';
       let finishReason = null;
 
+      const processEvent = (eventBlock) => {
+        // O prefixo "data:" só aparece na PRIMEIRA linha do bloco do evento;
+        // as linhas seguintes do mesmo JSON multi-linha não o repetem.
+        // Por isso removemos apenas esse prefixo inicial, sem filtrar linha a linha.
+        const trimmedBlock = eventBlock.replace(/^\uFEFF?/, ''); // remove BOM se houver
+        if(!trimmedBlock.trim().startsWith('data:')) return;
+        const jsonStr = trimmedBlock.replace(/^data:\s?/, '').trim();
+        if(!jsonStr || jsonStr === '[DONE]') return;
+        try{
+          const parsed = JSON.parse(jsonStr);
+          const cand = parsed?.candidates?.[0];
+          if(cand?.finishReason) finishReason = cand.finishReason;
+          const chunk = (cand?.content?.parts || [])
+            .map(p => p.text || '').join('');
+          if(chunk){
+            fullText += chunk;
+            onChunk(chunk, fullText);
+          }
+        } catch(_e){
+          // Bloco ainda incompleto ou malformado — ignora silenciosamente.
+        }
+      };
+
       while(true){
         const { done, value } = await reader.read();
         if(done) break;
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop(); // última linha pode estar incompleta
-
-        for(const line of lines){
-          if(!line.startsWith('data: ')) continue;
-          const jsonStr = line.slice(6).trim();
-          if(jsonStr === '[DONE]') break;
-          try{
-            const parsed = JSON.parse(jsonStr);
-            const cand = parsed?.candidates?.[0];
-            if(cand?.finishReason) finishReason = cand.finishReason;
-            const chunk = (cand?.content?.parts || [])
-              .map(p => p.text || '').join('');
-            if(chunk){
-              fullText += chunk;
-              onChunk(chunk, fullText);
-            }
-          } catch(_e){}
+        // Eventos SSE são separados por uma linha vazia (\n\n)
+        let sepIndex;
+        while((sepIndex = buffer.indexOf('\n\n')) !== -1){
+          const eventBlock = buffer.slice(0, sepIndex);
+          buffer = buffer.slice(sepIndex + 2);
+          processEvent(eventBlock);
         }
       }
+      // Processa qualquer evento remanescente no buffer ao final do stream
+      if(buffer.trim()) processEvent(buffer);
 
       if(!fullText){
         throw new Error('A IA não retornou conteúdo. Tente reformular o pedido.');
