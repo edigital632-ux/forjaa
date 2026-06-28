@@ -1170,15 +1170,15 @@ let selectModeActive = false;
 let selectedTarget = null;
 
 /* =================================================================
-   MODELOS DE IA — CORRIGIDO: usa API v1 e modelos atuais
+   ✅ CORREÇÃO: Modelos atualizados + endpoint v1beta (suporta Gemini 2.5)
 ================================================================= */
 const GEMINI_MODELS = [
-  'gemini-2.0-flash',
-  'gemini-2.0-flash-lite',
-  'gemini-1.5-flash-latest'
+  'gemini-2.5-flash',       // Principal — mais capaz e atual
+  'gemini-2.0-flash',       // Fallback rápido
+  'gemini-2.0-flash-lite'   // Fallback leve
 ];
-// URL corrigida: v1 em vez de v1beta
-const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1/models';
+// v1beta é necessário para Gemini 2.5+
+const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 /* =================================================================
    AUTENTICAÇÃO
@@ -1673,9 +1673,7 @@ function removeThinking(){
 }
 
 /* =================================================================
-   CHAMADA À API DO GEMINI — CORRIGIDA
-   - Usa GEMINI_API_BASE (v1 em vez de v1beta)
-   - Modelos atualizados: gemini-2.0-flash, gemini-2.0-flash-lite, gemini-1.5-flash-latest
+   ✅ CORREÇÃO PRINCIPAL: API v1beta + Gemini 2.5 Flash como modelo padrão
 ================================================================= */
 async function callGeminiWithFallback(systemPrompt, userParts){
   let lastError = null;
