@@ -520,7 +520,7 @@ footer{
 .api-key-banner{
   display:none;align-items:center;gap:12px;padding:10px 16px;
   background:rgba(255,122,69,0.07);border-bottom:1px solid var(--border);font-size:13px;color:var(--text-dim);
-  flex-wrap:wrap;
+  flex-wrap:wrap; transition: background 0.3s, border-color 0.3s;
 }
 .api-key-banner select{
   background:var(--bg-deep);border:1px solid var(--border);border-radius:7px;
@@ -680,7 +680,7 @@ footer{
     <div class="auth-card">
       <div class="logo"><span class="logo-mark">{ }</span>Forja</div>
       <h2 id="authTitle">Bem-vindo de volta</h2>
-      <p class="sub" id="authSub">Entre para continue seus projetos</p>
+      <p class="sub" id="authSub">Entre para continuar seus projetos</p>
       <div class="auth-error" id="authError"></div>
       <div id="signupNameField" class="field" style="display:none;">
         <label>NOME</label>
@@ -858,7 +858,7 @@ const templates = [
   {name:'Portfólio Criativo', cat:'Site · Portfólio', prompt:'Crie uma página de portfólio criativo, com seção de apresentação, uma grade de projetos com imagem e título, e uma seção de contato.'},
   {name:'Rastreador de Hábitos', cat:'App · SaaS', prompt:'Crie um app de rastreador de hábitos diários, onde o usuário pode adicionar hábitos, marcar como concluído no dia, e ver uma contagem de sequência (streak) para cada um.'},
   {name:'Blog Pessoal', cat:'Site · Blog', prompt:'Crie um blog pessoal simples, com uma lista de posts (título, data e resumo) e uma página de leitura para cada post.'},
-  {name:'Damas Online', cat:'App · Jogo', prompt:'Crie um jogo de damas functional para dois jogadores no mesmo dispositivo, com tabuleiro 8x8, peças clicáveis e regras básicas de movimento e captura.'},
+  {name:'Damas Online', cat:'App · Jogo', prompt:'Crie um jogo de damas funcional para dois jogadores no mesmo dispositivo, com tabuleiro 8x8, peças clicáveis e regras básicas de movimento e captura.'},
   {name:'Chat em Tempo Real', cat:'App · Mensagens', prompt:'Crie a interface de um app de chat estilo mensageiro, com lista de conversas à esquerda e uma janela de mensagens à direita, com campo para digitar e enviar.'}
 ];
 const grid = document.getElementById('templatesGrid');
@@ -1165,11 +1165,17 @@ function showBuilder(){
   document.getElementById('apiProviderSelect').value = currentProvider;
   handleProviderChange();
   
-  // Verifica se a chave do provedor atual existe
-  const currentKey = localStorage.getItem('forja_key_' + currentProvider) || '';
-  if(!currentKey) {
+  // Verifica se a chave do provedor atual existe. Se não existir, exibe o banner chamando atenção.
+  const activeKey = localStorage.getItem('forja_key_' + currentProvider) || '';
+  if(!activeKey) {
+    document.getElementById('apiKeyInput').value = '';
     document.getElementById('apiKeyBanner').style.display = 'flex';
+    setTimeout(() => {
+      const input = document.getElementById('apiKeyInput');
+      if (input) input.focus();
+    }, 200);
   } else {
+    document.getElementById('apiKeyInput').value = '••••••••••••';
     document.getElementById('apiKeyBanner').style.display = 'none';
   }
 }
@@ -1201,17 +1207,26 @@ function handleProviderChange() {
   
   // Preenche o input caso já possua chave salva para este provedor específico
   const savedKey = localStorage.getItem('forja_key_' + provider) || '';
-  document.getElementById('apiKeyInput').value = savedKey;
+  if (savedKey) {
+    document.getElementById('apiKeyInput').value = '••••••••••••';
+  } else {
+    document.getElementById('apiKeyInput').value = '';
+  }
 }
 
 function saveApiKey(){
   const provider = document.getElementById('apiProviderSelect').value;
   const val = document.getElementById('apiKeyInput').value.trim();
-  if(!val) return;
+  if(!val || val.includes('•')) return;
   
   localStorage.setItem('forja_key_' + provider, val);
-  alert('Chave API para ' + provider.toUpperCase() + ' salva com sucesso!');
-  document.getElementById('apiKeyBanner').style.display = 'none';
+  
+  const banner = document.getElementById('apiKeyBanner');
+  banner.style.background = 'rgba(255,122,69,0.07)';
+  banner.style.borderBottom = '1px solid var(--border)';
+  banner.style.display = 'none';
+  
+  renderMessage('ai', '✅ Chave de API (' + provider.toUpperCase() + ') guardada com sucesso! Já pode descrever o seu app.');
 }
 
 /* =================================================================
@@ -1313,8 +1328,16 @@ async function sendChatMessage(forcedText){
   const currentProvider = localStorage.getItem('forja_api_provider') || 'gemini';
   const activeKey = localStorage.getItem('forja_key_' + currentProvider) || '';
 
+  // Se não tem chave configurada, obriga visualmente a configurar
   if(!activeKey){
-    renderMessage('ai', 'Antes de gerar código, configure e salve a chave de API para a IA (' + currentProvider.toUpperCase() + ') selecionada na barra superior.');
+    const banner = document.getElementById('apiKeyBanner');
+    banner.style.display = 'flex';
+    banner.style.background = 'rgba(255, 95, 86, 0.2)';
+    banner.style.borderBottom = '1px solid #ff5f56';
+    
+    renderMessage('ai', '⚠️ Atenção: Precisa de introduzir a sua chave da API (' + currentProvider.toUpperCase() + ') na barra superior para podermos gerar o código da sua aplicação!');
+    document.getElementById('apiKeyInput').focus();
+    
     chatHistory.push({role:'ai', content:'(chave de API não configurada)'});
     saveProjectState();
     return;
