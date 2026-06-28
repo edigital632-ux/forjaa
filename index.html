@@ -2078,10 +2078,7 @@ Você NUNCA deve entregar um app simples, raso, ou um "MVP de exemplo". O padrã
 REGRA MAIS IMPORTANTE — PERSISTÊNCIA DE DADOS COM FIREBASE:
 O app que você gerar será publicado como um link público e usado por pessoas reais, em dispositivos diferentes, em momentos diferentes. Por isso, qualquer dado que o app crie, edite ou liste (clientes, tarefas, transações, mensagens, produtos, hábitos, posts, o que for) NÃO PODE viver só em variável JavaScript — precisa ser salvo no Firebase Firestore, ou os dados desaparecem ao recarregar a página e o app fica inútil para o usuário final.
 
-Sempre que o app tiver qualquer tipo de dado para guardar, inclua no <head> ou antes do </body>:
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"><\/script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"><\/script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"><\/script>
+Sempre que o app tiver qualquer tipo de dado para guardar, inclua no <head> ou antes do </body> as três tags de script do Firebase (app, auth e firestore, versão 10.12.2 compat) apontando para https://www.gstatic.com/firebasejs/10.12.2/ — use a sintaxe normal de uma tag script com atributo src, fechando cada uma normalmente.
 
 E inicialize com EXATAMENTE esta config (não troque nenhum valor):
 const firebaseConfig = ${JSON.stringify(firebaseConfig)};
@@ -2117,9 +2114,9 @@ ${currentProjectCode ? 'CÓDIGO ATUAL DO PROJETO:\n' + currentProjectCode : 'Nã
     const cleanCode = rawText.replace(/^```html\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
 
     // Checagem de integridade: um HTML gerado de verdade tem que abrir e fechar
-    // a tag <html> e ter pelo menos uma tag </script> casando uma <script> (quando
-    // há JS). Se faltar isso, o código está incompleto/corrompido e qualquer botão
-    // ou funcionalidade após o ponto do corte simplesmente não vai existir —
+    // a tag <html> e ter a tag de fechamento de cada script casando com sua abertura
+    // (quando há JS). Se faltar isso, o código está incompleto/corrompido e qualquer
+    // botão ou funcionalidade após o ponto do corte simplesmente não vai existir —
     // melhor avisar agora do que dizer "Pronto!" para um app quebrado.
     const hasOpenHtml = /<html[\s>]/i.test(cleanCode);
     const hasCloseHtml = /<\/html\s*>/i.test(cleanCode);
@@ -2162,14 +2159,26 @@ ${currentProjectCode ? 'CÓDIGO ATUAL DO PROJETO:\n' + currentProjectCode : 'Nã
 
 // Injeta um pequeno script de captura de erros no app gerado, para que
 // erros de JS apareçam como um aviso visível em vez de uma tela preta muda.
+//
+// ATENÇÃO: a tag de fechamento dentro da string abaixo é escrita como
+// '<' + '/script>' (concatenação), e NUNCA com barra invertida de escape.
+// O parser HTML do navegador lê o arquivo ANTES do JavaScript ser interpretado,
+// então ele corta o conteúdo da tag de script real no primeiro "fechamento de
+// script" literal que encontrar no texto — mesmo que esteja "escapado" dentro
+// de uma string JS, porque esse escape só tem efeito para o JS, não para o HTML.
+// Isso estava cortando o script principal da página no meio (linha ~2120),
+// causando "Unexpected end of input" / "Unexpected token 'const'" e quebrando
+// TODO o JavaScript da aplicação a partir desse ponto — inclusive submitAuth().
 function wrapCodeWithErrorOverlay(code){
+  const openScriptTag = '<' + 'script>';
+  const closeScriptTag = '<' + '/script>';
   const overlay = `
 <div id="__forja_err_overlay" style="display:none;position:fixed;inset:0;z-index:999999;background:#1a0f08;color:#ffb4a0;font-family:monospace;font-size:13px;padding:24px;overflow:auto;white-space:pre-wrap;line-height:1.6;">
 <div style="font-weight:700;color:#ff6b6b;margin-bottom:10px;font-size:15px;">⚠ Erro ao executar o app gerado</div>
 <div id="__forja_err_msg"></div>
 <div style="margin-top:16px;color:#a9a6b8;font-size:12px;">Isso normalmente é um erro de JavaScript no código gerado. Volte ao chat e peça para corrigir, ou tente gerar novamente.</div>
 </div>
-<script>
+` + openScriptTag + `
 (function(){
   function showErr(msg){
     var o = document.getElementById('__forja_err_overlay');
@@ -2179,7 +2188,7 @@ function wrapCodeWithErrorOverlay(code){
   window.addEventListener('error', function(e){ showErr((e.message||'Erro desconhecido') + (e.lineno ? (' — linha ' + e.lineno) : '')); });
   window.addEventListener('unhandledrejection', function(e){ showErr('Erro assíncrono: ' + (e.reason && e.reason.message ? e.reason.message : e.reason)); });
 })();
-<\/script>`;
+` + closeScriptTag;
   if(/<head[^>]*>/i.test(code)) return code.replace(/<head[^>]*>/i, m => m + overlay);
   if(/<body[^>]*>/i.test(code)) return code.replace(/<body[^>]*>/i, m => m + overlay);
   return overlay + code;
